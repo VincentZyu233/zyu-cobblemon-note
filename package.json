@@ -1,0 +1,16 @@
+{
+  "name": "cobblemon-1-8-guide",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev docs --host 127.0.0.1 --port 60908 --strictPort",
+    "build": "vitepress build docs",
+    "preview": "vitepress preview docs --host 127.0.0.1"
+  },
+  "devDependencies": {
+    "vitepress": "^1.6.3"
+  },
+  "dependencies": {
+    "@free-fonts/lxgw-wenkai": "^1.0.1"
+  }
+}

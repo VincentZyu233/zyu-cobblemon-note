@@ -1,0 +1,4 @@
+# Keep authored VitePress material visible in GitHub Linguist statistics.
+*.md linguist-detectable=true linguist-documentation=false
+*.ts linguist-detectable=true
+*.css linguist-detectable=true
