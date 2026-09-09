@@ -62,7 +62,11 @@ export default defineConfig({
         items: [
           { text: '一起听歌与全服点歌', link: '/music' },
           { text: '服务器性能监控', link: '/performance' },
-          { text: '便利指令与权限计划', link: '/server-command-plan' }
+          { text: '定时备份与异地恢复', link: '/server-backup' },
+          { text: '便利指令与权限计划', link: '/server-command-plan' },
+          { text: 'AI 集成：实时进度助手', link: '/ai-integration' },
+          { text: 'AI Bridge：部署与连接', link: '/ai-installation' },
+          { text: 'AI Bridge：游戏内与 MCP 用法', link: '/ai-commands' }
         ]
       },
       {

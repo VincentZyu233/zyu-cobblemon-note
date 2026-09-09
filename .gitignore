@@ -7,3 +7,15 @@ docs/.vitepress/dist/
 *.log
 .DS_Store
 .vscode/
+
+# AI bridge local runtime and Fabric build output
+gateway/.env
+gateway/.runtime/
+gateway/node_modules/
+gateway/dist/
+mod/.gradle/
+mod/build/
+mod/run/
+
+temp/
+tmp/

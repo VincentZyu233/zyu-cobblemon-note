@@ -12,7 +12,9 @@
 - 模组版本、数据包、配置和服务器规则会影响配方、生成、数值与指令权限。其他整合包、旧版本或未来版本请先通过游戏内 JEI、模组配置和对应版本源码核验，不能直接照搬。
 - 图片、经验和推荐来自个人游玩过程，可能不完整或随版本过期；发现错误时以当前版本游戏内行为为准。
 
-本项目使用 VitePress 构建，并由 GitHub Actions 部署到 GitHub Pages。
+本项目使用 VitePress 构建，并由 GitHub Actions 部署到 GitHub Pages。仓库同时包含一个仍在测试阶段的纯服务端 Fabric 模组和可与服务器同机运行的 MCP/OpenAI 网关：它们用于读取实际进度、供 AI 辅助讲解，不能替代玩家操作。
+
+> Fabric 构建产物目前只通过 GitHub Actions artifact 提供测试部署。只有在真实服务器验证稳定后才会创建 GitHub Release。
 
 ## 游玩截图
 
@@ -46,3 +48,9 @@ npm run build
 ```
 
 生成物位于 `docs/.vitepress/dist/`，由 CI 上传部署，不提交到仓库。
+
+## AI 集成开发
+
+- `mod/`：Fabric 1.21.1 服务端模组，提供受签名保护的 loopback 数据接口和 `/ai` 命令。
+- `gateway/`：运行在服务端同机的 MCP stdio 服务与 OpenAI 问答网关；密钥仅放在远程未提交的 `gateway/.env`，绝不提交。MCP 客户端可通过 SSH 本地端口转发接入。
+- [AI 集成说明](docs/ai-integration.md)：数据范围、权限、SSH 隧道和部署步骤。

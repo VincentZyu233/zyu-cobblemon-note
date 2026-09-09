@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "zyu_cobblemon_note",
+  "version": "${version}",
+  "name": "Zyu Cobblemon Note",
+  "description": "Private, read-only Minecraft progress bridge for Zyu's Cobblemon server.",
+  "authors": ["VincentZyu233"],
+  "contact": {
+    "sources": "https://github.com/VincentZyu233/zyu-cobblemon-note",
+    "issues": "https://github.com/VincentZyu233/zyu-cobblemon-note/issues"
+  },
+  "license": "MIT",
+  "environment": "server",
+  "entrypoints": {
+    "main": ["io.github.vincentzyu233.cobblemonnote.ZyuCobblemonNoteMod"]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.10",
+    "fabric-api": "*",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-language-kotlin": ">=1.13.6+kotlin.2.2.20"
+  },
+  "suggests": {
+    "cobblemon": "*"
+  }
+}

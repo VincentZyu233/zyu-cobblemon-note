@@ -7,3 +7,8 @@
   Co-authored-by: Codex <codex@openai.com>
   ```
 
+- 禁止在本机运行 Java、Gradle、Maven 或其他本地构建命令；Fabric 模组仅由 GitHub Actions 构建。
+- Fabric 模组尽可能使用 Kotlin：业务逻辑、数据模型、命令、网络处理和测试等可选实现默认均采用 Kotlin。除非 Kotlin 无法实现或用户明确指定，否则不得新增 Java 源文件；构建脚本、资源元数据等则使用其工具链要求的原生格式。优先复用 Cobblemon/Fabric 的 Kotlin API 与惯用写法。
+- 模组构建只由 `main` 分支提交信息中的关键词触发：`[build-action]` 仅构建并上传 GitHub Actions artifact；`[build-release]` 是其超集，成功构建后才创建 GitHub Release。
+- 日常提交不得带上述关键词。只有用户确认实际服务器测试稳定后，才可使用 `[build-release]`、创建发布标签或发布公开下载；测试部署一律使用 `[build-action]` 的 artifact。
+
