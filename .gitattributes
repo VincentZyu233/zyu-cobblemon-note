@@ -1,4 +1,10 @@
 # Keep authored VitePress material visible in GitHub Linguist statistics.
 *.md linguist-detectable=true linguist-documentation=false
-*.ts linguist-detectable=true
-*.css linguist-detectable=true
+*.mts linguist-detectable=true linguist-documentation=false linguist-vendored=false
+*.ts linguist-detectable=true linguist-documentation=false linguist-vendored=false
+*.css linguist-detectable=true linguist-documentation=false linguist-vendored=false
+
+# `.vitepress` is a dot-directory; declare the authored theme sources explicitly.
+docs/.vitepress/config.mts linguist-language=TypeScript
+docs/.vitepress/theme/*.ts linguist-language=TypeScript
+docs/.vitepress/theme/*.css linguist-language=CSS
