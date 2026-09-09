@@ -20,7 +20,9 @@ jobs:
           java-version: '21'
       - name: Build remapped Fabric jar
         working-directory: mod
-        run: ./gradlew build
+        run: |
+          chmod +x gradlew
+          ./gradlew build
       - uses: actions/upload-artifact@v4
         with:
           name: zyu-cobblemon-note-fabric-${{ github.sha }}
