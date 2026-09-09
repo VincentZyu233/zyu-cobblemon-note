@@ -3,7 +3,6 @@ package io.github.vincentzyu233.cobblemonnote
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.mojang.brigadier.arguments.StringArgumentType
-import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import net.fabricmc.api.ModInitializer
@@ -48,30 +47,30 @@ class ZyuCobblemonNoteMod : ModInitializer {
 
     private fun handle(exchange: HttpExchange) {
         val body = exchange.requestBody.readBytes().toString(Charsets.UTF_8)
-        if (!exchange.remoteAddress.address.isLoopbackAddress || !authorized(exchange, body)) return reply(exchange, 401, error("unauthorized"))
+        if (!exchange.remoteAddress.address.isLoopbackAddress || !authorized(exchange, body)) return reply(exchange, 401, errorResponse("unauthorized"))
         try {
             val response = when (exchange.requestURI.path) {
                 "/v1/status" -> onServer { snapshots.status() }
                 "/v1/players" -> onServer { JsonObject().apply { add("players", snapshots.players()) } }
-                "/v1/player" -> onServer { snapshots.player(player(query(exchange)["name"] ?: error("missing_name"))) }
-                "/v1/party" -> onServer { JsonObject().apply { add("party", snapshots.party(player(query(exchange)["name"] ?: error("missing_name")))) } }
-                "/v1/pc" -> onServer { snapshots.pc(player(query(exchange)["name"] ?: error("missing_name"))) }
+                "/v1/player" -> onServer { snapshots.player(player(query(exchange)["name"] ?: throw IllegalArgumentException("missing_name"))) }
+                "/v1/party" -> onServer { JsonObject().apply { add("party", snapshots.party(player(query(exchange)["name"] ?: throw IllegalArgumentException("missing_name")))) } }
+                "/v1/pc" -> onServer { snapshots.pc(player(query(exchange)["name"] ?: throw IllegalArgumentException("missing_name"))) }
                 "/v1/bases" -> onServer { JsonObject().apply { add("bases", snapshots.bases()) } }
-                "/v1/base" -> onServer { snapshots.base(query(exchange)["name"] ?: error("missing_name")) }
+                "/v1/base" -> onServer { snapshots.base(query(exchange)["name"] ?: throw IllegalArgumentException("missing_name")) }
                 "/v1/answers" -> {
                     require(exchange.requestMethod == "POST") { "method_not_allowed" }
                     val answer = gson.fromJson(body, JsonObject::class.java)
                     acceptAnswer(answer["requestId"].asString, answer["answer"].asString)
                     JsonObject().apply { addProperty("accepted", true) }
                 }
-                else -> error("not_found")
+                else -> errorResponse("not_found")
             }
             reply(exchange, 200, response)
-        } catch (error: Exception) { reply(exchange, 400, error(error.message ?: "request_failed")) }
+        } catch (error: Exception) { reply(exchange, 400, errorResponse(error.message ?: "request_failed")) }
     }
 
     private fun onServer(action: () -> JsonObject): JsonObject = java.util.concurrent.CompletableFuture.supplyAsync({ action() }, server).get(5, java.util.concurrent.TimeUnit.SECONDS)
-    private fun player(name: String): ServerPlayer = server.playerList.getPlayerByName(name) ?: error("player_offline")
+    private fun player(name: String): ServerPlayer = server.playerList.getPlayerByName(name) ?: throw IllegalArgumentException("player_offline")
     private fun authorized(exchange: HttpExchange, body: String): Boolean {
         val timestamp = exchange.requestHeaders.getFirst("X-ZCN-Timestamp") ?: return false; val nonce = exchange.requestHeaders.getFirst("X-ZCN-Nonce") ?: return false
         if (runCatching { kotlin.math.abs(Instant.now().epochSecond - timestamp.toLong()) <= 60 }.getOrDefault(false).not()) return false
@@ -79,7 +78,7 @@ class ZyuCobblemonNoteMod : ModInitializer {
     }
     private fun query(exchange: HttpExchange) = (exchange.requestURI.rawQuery ?: "").split("&").filter { it.isNotBlank() }.associate { val pair = it.split("=", limit = 2); URLDecoder.decode(pair[0], Charsets.UTF_8) to URLDecoder.decode(pair.getOrElse(1) { "" }, Charsets.UTF_8) }
     private fun reply(exchange: HttpExchange, code: Int, value: JsonObject) { val bytes = gson.toJson(value).toByteArray(); exchange.responseHeaders.add("Content-Type", "application/json"); exchange.sendResponseHeaders(code, bytes.size.toLong()); exchange.responseBody.use { it.write(bytes) } }
-    private fun error(message: String) = JsonObject().apply { addProperty("error", message) }
+    private fun errorResponse(message: String) = JsonObject().apply { addProperty("error", message) }
 
     private fun registerCommands(dispatcher: com.mojang.brigadier.CommandDispatcher<CommandSourceStack>) {
         dispatcher.register(Commands.literal("ai")

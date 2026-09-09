@@ -9,11 +9,10 @@ import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.Container
-import net.minecraft.world.level.Level
 
 class SnapshotService(private val server: MinecraftServer, private val config: BridgeConfig) {
     fun status() = JsonObject().apply {
-        val mspt = server.averageTickTime.toDouble()
+        val mspt = server.averageTickTimeNanos / 1_000_000.0
         addProperty("onlinePlayers", server.playerCount); addProperty("maxPlayers", server.maxPlayers)
         addProperty("mspt", "%.2f".format(mspt).toDouble()); addProperty("tps", "%.2f".format(minOf(20.0, 1000.0 / maxOf(mspt, 1.0))).toDouble())
         addProperty("cobblemonAvailable", runCatching { Class.forName("com.cobblemon.mod.common.Cobblemon") }.isSuccess)
@@ -24,13 +23,13 @@ class SnapshotService(private val server: MinecraftServer, private val config: B
     }
     fun party(player: ServerPlayer) = cobblemonParty(player)
     fun pc(player: ServerPlayer): JsonObject = JsonObject().apply {
-        val pc = cobblemonStorage()?.let { invoke(it, "getPC", player) } ?: error("Cobblemon unavailable")
+        val pc = cobblemonStorage()?.let { invoke(it, "getPC", player) } ?: throw IllegalStateException("Cobblemon unavailable")
         val values = (pc as? Iterable<*>)?.toList().orEmpty()
-        addProperty("pokemonCount", values.size); add("sample", JsonArray().also { array -> values.take(12).forEach { array.add(pokemon(it)) } })
+        addProperty("pokemonCount", values.size); add("sample", JsonArray().also { array -> values.take(12).forEach { value -> value?.let { array.add(pokemon(it)) } } })
     }
     fun bases() = JsonArray().also { array -> config.bases.forEach { base -> array.add(JsonObject().apply { addProperty("name", base.name); addProperty("regions", base.regions.size); addProperty("targets", base.targets.size) }) } }
     fun base(name: String): JsonObject {
-        val base = config.bases.firstOrNull { it.name.equals(name, true) } ?: error("Unknown base: $name")
+        val base = config.bases.firstOrNull { it.name.equals(name, true) } ?: throw IllegalArgumentException("Unknown base: $name")
         val containers = JsonArray()
         base.targets.forEach { target -> containers.add(container(target.dimension, target.x, target.y, target.z, target.label)) }
         base.regions.forEach { region -> scanRegion(region).forEach(containers::add) }
@@ -60,7 +59,11 @@ class SnapshotService(private val server: MinecraftServer, private val config: B
         val party = cobblemonStorage()?.let { runCatching { invoke(it, "getParty", player) }.getOrNull() } ?: return@also
         (runCatching { invoke(party, "toGappyList") }.getOrNull() as? Iterable<*>)?.forEachIndexed { slot, value -> array.add(JsonObject().apply { addProperty("slot", slot); if (value == null) addProperty("empty", true) else add("pokemon", pokemon(value)) }) }
     }
-    private fun pokemon(value: Any?) = JsonObject().apply { addProperty("name", runCatching { invoke(invoke(value!!, "getDisplayName"), "getString") }.getOrDefault("Unknown").toString()); addProperty("level", (runCatching { invoke(value!!, "getLevel") }.getOrNull() as? Number)?.toInt() ?: 0) }
+    private fun pokemon(value: Any) = JsonObject().apply {
+        val name = runCatching { invoke(value, "getDisplayName")?.let { invoke(it, "getString") } }.getOrNull()?.toString() ?: "Unknown"
+        addProperty("name", name)
+        addProperty("level", (runCatching { invoke(value, "getLevel") }.getOrNull() as? Number)?.toInt() ?: 0)
+    }
     private fun cobblemonStorage(): Any? = runCatching { invoke(Class.forName("com.cobblemon.mod.common.Cobblemon").getField("INSTANCE").get(null), "getStorage") }.getOrNull()
-    private fun invoke(target: Any, name: String, vararg args: Any): Any? = target.javaClass.methods.firstOrNull { it.name == name && it.parameterCount == args.size && it.parameterTypes.withIndex().all { (i, type) -> type.isAssignableFrom(args[i].javaClass) } }?.invoke(target, *args) ?: error("Cobblemon API missing $name")
+    private fun invoke(target: Any, name: String, vararg args: Any): Any? = target.javaClass.methods.firstOrNull { it.name == name && it.parameterCount == args.size && it.parameterTypes.withIndex().all { (i, type) -> type.isAssignableFrom(args[i].javaClass) } }?.invoke(target, *args) ?: throw IllegalStateException("Cobblemon API missing $name")
 }

@@ -22,7 +22,7 @@ jobs:
         working-directory: mod
         run: |
           chmod +x gradlew
-          ./gradlew build --stacktrace --info
+          ./gradlew build
       - uses: actions/upload-artifact@v4
         with:
           name: zyu-cobblemon-note-fabric-${{ github.sha }}
