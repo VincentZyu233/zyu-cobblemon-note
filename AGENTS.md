@@ -11,6 +11,8 @@
 - Fabric 模组尽可能使用 Kotlin：业务逻辑、数据模型、命令、网络处理和测试等可选实现默认均采用 Kotlin。除非 Kotlin 无法实现或用户明确指定，否则不得新增 Java 源文件；构建脚本、资源元数据等则使用其工具链要求的原生格式。优先复用 Cobblemon/Fabric 的 Kotlin API 与惯用写法。
 - 模组构建只由 `main` 分支提交信息中的关键词触发：`[build-action]` 仅构建并上传 GitHub Actions artifact；`[build-release]` 是其超集，成功构建后才创建 GitHub Release。
 - 日常提交不得带上述关键词。只有用户确认实际服务器测试稳定后，才可使用 `[build-release]`、创建发布标签或发布公开下载；测试部署一律使用 `[build-action]` 的 artifact。
+- 所有可部署组件遵循 `x.y.z` 语义化版本：`x` 仅用于不兼容变更，例如需要调整部署方式、配置格式、权限模型或客户端/服务端协议；`y` 用于向后兼容的新功能，例如新增指令、页面、查询能力或配置项；`z` 仅用于向后兼容的修复、样式调整、文档纠正和打包改进。一次提交如同时满足多项，以影响最大的级别递增，并将较低位归零。
+- 自研 MCDR 插件的 `mcdr/mcdreforged.plugin.json` 与 `mcdr/pyproject.toml` 版本必须保持一致；打包文件名必须为 `zyu-cobblemon-web-<x.y.z>.mcdr`，版本从 manifest 自动读取，不能硬编码或省略。
 
 ## MCDR 与部署
 

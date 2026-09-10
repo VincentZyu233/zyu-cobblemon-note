@@ -52,7 +52,7 @@ jobs:
           rm -f server-package/fabric/*-sources.jar
           cp gateway/package.json gateway/package-lock.json gateway/.env.example server-package/gateway/
           cp -R gateway/dist server-package/gateway/dist
-          cp mcdr/dist/zyu-cobblemon-web.mcdr server-package/mcdr/
+          cp mcdr/dist/zyu-cobblemon-web-*.mcdr server-package/mcdr/
           node -e "const fs=require('fs'); fs.writeFileSync('server-package/manifest.json', JSON.stringify({commit: process.env.GITHUB_SHA, build: process.env.GITHUB_RUN_ID, artifacts:['fabric','gateway','mcdr']}, null, 2)+'\\n')"
           (cd server-package/gateway && zip -qr ../zyu-cobblemon-note-gateway.zip .)
           sha256sum server-package/fabric/*.jar server-package/mcdr/*.mcdr server-package/zyu-cobblemon-note-gateway.zip > server-package/SHA256SUMS

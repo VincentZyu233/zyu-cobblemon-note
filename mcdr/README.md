@@ -4,7 +4,7 @@
 
 ## 打包与部署
 
-- 由根目录 GitHub Actions 在 `[build-action]` 构建中打包为 `zyu-cobblemon-web.mcdr`。
+- 由根目录 GitHub Actions 在 `[build-action]` 构建中打包为带版本号的 `zyu-cobblemon-web-<版本>.mcdr`。
 - 部署时只能安装 CI artifact，不能把此源码目录直接复制进 MCDR `plugins/`。
 - MCDR 会在 `config/zyu_cobblemon_web/config.json` 自动生成运行时配置。该文件包含密钥与登录配置，不可提交。
 

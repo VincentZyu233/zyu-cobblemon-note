@@ -1,18 +1,18 @@
 from __future__ import annotations
 
 import base64
+from dataclasses import dataclass
 import hashlib
 import hmac
 import json
+from pathlib import Path
 import secrets
 import threading
 import time
+from typing import Any
 import urllib.error
 import urllib.parse
 import urllib.request
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Any
 from uuid import uuid4
 
 from fastapi import FastAPI
@@ -181,6 +181,80 @@ class DashboardState:
 NICEGUI_APP = FastAPI()
 STATE: DashboardState | None = None
 NICEGUI_CONFIGURED = False
+THEME_MODES = ("system", "light", "dark")
+THEME_ICONS = {"system": "brightness_auto", "light": "light_mode", "dark": "dark_mode"}
+THEME_LABELS = {"system": "跟随系统", "light": "白天模式", "dark": "黑夜模式"}
+THEME_CSS = """
+<style>
+:root {
+    --zcn-red: #c93435;
+    --zcn-red-strong: #aa2027;
+    --zcn-accent: #f2c94c;
+}
+:root[data-zcn-theme="light"] {
+    --zcn-bg: #f4f1ef;
+    --zcn-surface: #ffffff;
+    --zcn-surface-muted: #f8f6f5;
+    --zcn-ink: #201f20;
+    --zcn-muted: #6c6666;
+    --zcn-border: #d8d1d0;
+    --zcn-header: var(--zcn-red);
+    --zcn-header-ink: #ffffff;
+    --zcn-shadow: 0 2px 10px rgb(53 23 23 / 8%);
+}
+:root[data-zcn-theme="dark"] {
+    --zcn-bg: #101010;
+    --zcn-surface: #1a1919;
+    --zcn-surface-muted: #242121;
+    --zcn-ink: #faf5f4;
+    --zcn-muted: #c6bdbc;
+    --zcn-border: #4b4141;
+    --zcn-header: #171515;
+    --zcn-header-ink: #ffffff;
+    --zcn-shadow: 0 2px 12px rgb(0 0 0 / 32%);
+}
+@media (prefers-color-scheme: light) {
+    :root[data-zcn-theme="system"] {
+        --zcn-bg: #f4f1ef;
+        --zcn-surface: #ffffff;
+        --zcn-surface-muted: #f8f6f5;
+        --zcn-ink: #201f20;
+        --zcn-muted: #6c6666;
+        --zcn-border: #d8d1d0;
+        --zcn-header: var(--zcn-red);
+        --zcn-header-ink: #ffffff;
+        --zcn-shadow: 0 2px 10px rgb(53 23 23 / 8%);
+    }
+}
+@media (prefers-color-scheme: dark) {
+    :root[data-zcn-theme="system"] {
+        --zcn-bg: #101010;
+        --zcn-surface: #1a1919;
+        --zcn-surface-muted: #242121;
+        --zcn-ink: #faf5f4;
+        --zcn-muted: #c6bdbc;
+        --zcn-border: #4b4141;
+        --zcn-header: #171515;
+        --zcn-header-ink: #ffffff;
+        --zcn-shadow: 0 2px 12px rgb(0 0 0 / 32%);
+    }
+}
+body, .q-page, .nicegui-content { background: var(--zcn-bg); color: var(--zcn-ink); }
+.zcn-header { background: var(--zcn-header); color: var(--zcn-header-ink); border-bottom: 3px solid var(--zcn-red); }
+.zcn-card { background: var(--zcn-surface); border: 1px solid var(--zcn-border); border-radius: 8px; box-shadow: var(--zcn-shadow); color: var(--zcn-ink); }
+.zcn-player-card { background: var(--zcn-surface-muted); border: 1px solid var(--zcn-border); border-radius: 6px; color: var(--zcn-ink); }
+.zcn-muted { color: var(--zcn-muted); }
+.zcn-header-muted { color: color-mix(in srgb, var(--zcn-header-ink) 78%, transparent); }
+.zcn-theme-switch { border: 1px solid color-mix(in srgb, var(--zcn-header-ink) 55%, transparent); border-radius: 6px; gap: 0; overflow: hidden; }
+.zcn-theme-button { min-width: 34px; min-height: 32px; color: var(--zcn-header-ink); border-radius: 0; }
+.zcn-theme-button.zcn-theme-selected { background: var(--zcn-header-ink); color: var(--zcn-red-strong); }
+.zcn-theme-button.zcn-theme-unselected { background: transparent; }
+.zcn-card .q-field__control, .zcn-card .q-table__container { background: var(--zcn-surface); color: var(--zcn-ink); }
+.zcn-card .q-field--outlined .q-field__control:before, .zcn-card .q-table__container { border-color: var(--zcn-border); }
+.zcn-card .q-field__native, .zcn-card .q-field__label, .zcn-card .q-table, .zcn-card .q-table th, .zcn-card .q-table td { color: var(--zcn-ink); }
+.zcn-card .q-table tbody tr:nth-child(even) { background: var(--zcn-surface-muted); }
+</style>
+"""
 
 
 def current_state() -> DashboardState:
@@ -193,10 +267,34 @@ def current_state() -> DashboardState:
 async def index() -> None:
     state = current_state()
     ui.colors(primary="#c93435", secondary="#151515", accent="#f2c94c")
-    with ui.header().classes("items-center justify-between bg-[#151515] text-white"):
+    ui.add_head_html(THEME_CSS)
+    theme_mode = str(app.storage.user.get("theme_mode", "system"))
+    if theme_mode not in THEME_MODES:
+        theme_mode = "system"
+    ui.run_javascript(f"document.documentElement.dataset.zcnTheme = {json.dumps(theme_mode)}")
+    with ui.header().classes("zcn-header items-center justify-between"):
         ui.label("Cobblemon 进度面板").classes("text-lg font-bold")
         with ui.row().classes("items-center gap-3"):
-            refreshed = ui.label("正在读取").classes("text-sm text-gray-300")
+            refreshed = ui.label("正在读取").classes("zcn-header-muted text-sm")
+            theme_buttons: dict[str, Any] = {}
+
+            def choose_theme(mode: str) -> None:
+                app.storage.user["theme_mode"] = mode
+                ui.run_javascript(f"document.documentElement.dataset.zcnTheme = {json.dumps(mode)}")
+                for name, button in theme_buttons.items():
+                    button.classes(
+                        add="zcn-theme-selected" if name == mode else "zcn-theme-unselected",
+                        remove="zcn-theme-unselected" if name == mode else "zcn-theme-selected",
+                    )
+
+            with ui.row().classes("zcn-theme-switch"):
+                for mode in THEME_MODES:
+                    theme_buttons[mode] = ui.button(
+                        icon=THEME_ICONS[mode],
+                        on_click=lambda mode=mode: choose_theme(mode),
+                    ).props("flat dense").classes(
+                        f"zcn-theme-button {'zcn-theme-selected' if mode == theme_mode else 'zcn-theme-unselected'}"
+                    ).tooltip(THEME_LABELS[mode])
             if app.storage.user.get("authenticated"):
                 ui.button("退出 AI", on_click=lambda: (app.storage.user.pop("authenticated", None), ui.navigate.to("/"))).props("flat color=white")
             else:
@@ -206,15 +304,15 @@ async def index() -> None:
         with ui.row().classes("w-full gap-3"):
             values: dict[str, Any] = {}
             for label in ("TPS", "MSPT", "在线"):
-                with ui.card().classes("flex-1 min-w-36 p-4"):
-                    ui.label(label).classes("text-gray-600 text-sm")
+                with ui.card().classes("zcn-card flex-1 min-w-36 p-4"):
+                    ui.label(label).classes("zcn-muted text-sm")
                     values[label] = ui.label("-").classes("text-2xl font-bold")
 
-        with ui.card().classes("w-full p-4"):
+        with ui.card().classes("zcn-card w-full p-4"):
             with ui.row().classes("w-full items-center justify-between"):
                 ui.label("基地物资").classes("text-lg font-bold")
                 query = ui.input(placeholder="搜索物品 ID，例如 iron_ingot").classes("w-80 max-w-full")
-            inventory_note = ui.label().classes("text-sm text-gray-600")
+            inventory_note = ui.label().classes("zcn-muted text-sm")
             inventory = ui.table(columns=[
                 {"name": "item", "label": "物品", "field": "item", "align": "left"},
                 {"name": "count", "label": "数量", "field": "count"},
@@ -222,12 +320,12 @@ async def index() -> None:
                 {"name": "position", "label": "位置", "field": "position"},
             ], rows=[]).classes("w-full")
 
-        with ui.card().classes("w-full p-4"):
+        with ui.card().classes("zcn-card w-full p-4"):
             ui.label("在线玩家").classes("text-lg font-bold")
             players = ui.column().classes("w-full gap-3")
 
         if app.storage.user.get("authenticated"):
-            with ui.card().classes("w-full p-4"):
+            with ui.card().classes("zcn-card w-full p-4"):
                 ui.label("AI 查询").classes("text-lg font-bold")
                 selected_player = ui.select(options=[], label="作为哪位在线玩家提问").classes("w-full")
                 question = ui.textarea(placeholder="例如：基地里还有多少铁？").props("maxlength=500").classes("w-full")
@@ -270,11 +368,11 @@ async def index() -> None:
             players.clear()
             with players:
                 if not details:
-                    ui.label("当前没有在线玩家。").classes("text-gray-600")
+                    ui.label("当前没有在线玩家。").classes("zcn-muted")
                 for player in details:
-                    with ui.card().classes("w-full bg-gray-50"):
+                    with ui.card().classes("zcn-player-card w-full"):
                         ui.label(f"{player.get('name', 'Unknown')}  ·  {player.get('health', '-')} HP").classes("font-bold")
-                        ui.label(f"{player.get('dimension', '')}  {player.get('x', 0):.1f}, {player.get('y', 0):.1f}, {player.get('z', 0):.1f}").classes("text-sm text-gray-600")
+                        ui.label(f"{player.get('dimension', '')}  {player.get('x', 0):.1f}, {player.get('y', 0):.1f}, {player.get('z', 0):.1f}").classes("zcn-muted text-sm")
                         items = "、".join(f"{item.get('item')} x{item.get('count')}" for item in player.get("inventory", [])) or "空"
                         ui.label(f"背包：{items}").classes("text-sm break-all")
                         party = "、".join("空位" if slot.get("empty") else f"{slot.get('pokemon', {}).get('name')} Lv.{slot.get('pokemon', {}).get('level')}" for slot in player.get("party", [])) or "暂无"
@@ -295,9 +393,12 @@ def login() -> None:
     if app.storage.user.get("authenticated"):
         ui.navigate.to("/")
         return
-    with ui.column().classes("absolute-center w-96 max-w-[calc(100%-2rem)] gap-3"):
+    ui.add_head_html(THEME_CSS)
+    theme_mode = str(app.storage.user.get("theme_mode", "system"))
+    ui.run_javascript(f"document.documentElement.dataset.zcnTheme = {json.dumps(theme_mode if theme_mode in THEME_MODES else 'system')}")
+    with ui.column().classes("zcn-card absolute-center w-96 max-w-[calc(100%-2rem)] gap-3 p-6"):
         ui.label("AI 登录").classes("text-2xl font-bold")
-        ui.label("库存和在线状态公开；AI 问答需要登录。HTTP 不适合复用重要密码。").classes("text-sm text-gray-600")
+        ui.label("库存和在线状态公开；AI 问答需要登录。HTTP 不适合复用重要密码。").classes("zcn-muted text-sm")
         username = ui.input("账号", value=str(state.config["auth"]["username"]))
         password = ui.input("密码", password=True, password_toggle_button=True)
         error = ui.label().classes("text-red-700 text-sm")
