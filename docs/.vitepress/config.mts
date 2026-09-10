@@ -1,8 +1,10 @@
 import { defineConfig } from 'vitepress'
 import { withMermaid } from 'vitepress-plugin-mermaid'
 
+const base = '/zyu-cobblemon-note/'
+
 export default withMermaid(defineConfig({
-  base: '/zyu-cobblemon-note/',
+  base,
   title: 'Cobblemon 1.8 指南',
   description: 'Zyu 的 Cobblemon 1.8 Fabric 整合包个人游玩笔记',
   lang: 'zh-CN',
@@ -10,10 +12,10 @@ export default withMermaid(defineConfig({
   head: [
     ['meta', { name: 'theme-color', content: '#b5363d' }],
     ['meta', { name: 'keywords', content: 'Cobblemon, 宝可梦, Minecraft, Fabric, 1.8' }],
-    ['link', { rel: 'icon', type: 'image/png', href: '/assets/icon.png' }]
+    ['link', { rel: 'icon', type: 'image/png', href: `${base}assets/icon.png` }]
   ],
   themeConfig: {
-    logo: '/assets/icon.png',
+    logo: `${base}assets/icon.png`,
     nav: [
       { text: '从这里开始', link: '/' },
       { text: '新手开局', link: '/getting-started' },
@@ -36,7 +38,7 @@ export default withMermaid(defineConfig({
           { text: '据点与资源循环', link: '/settlement' },
           { text: '树果肥料：种植与变异', link: '/fertilizers' },
           { text: '宝可梦钓竿与鱼饵', link: '/fishing' },
-          { text: '牧场：资源与安全经营', link: '/ranch' },
+          { text: '牧场：资源、宠物与安全经营', link: '/ranch' },
           { text: '同行、肩扛与坐骑', link: '/movement' },
           { text: '交换、赠送与换主', link: '/trading' },
           { text: '中后期推进', link: '/progression' },

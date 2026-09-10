@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "vitepress dev docs --host 127.0.0.1 --port 60908 --strictPort",
     "build": "vitepress build docs",
-    "preview": "vitepress preview docs --host 127.0.0.1"
+    "preview": "vitepress preview docs --host 127.0.0.1 --port 60908 --strictPort"
   },
   "devDependencies": {
     "mermaid": "^11.17.2",
