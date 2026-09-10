@@ -1,8 +1,8 @@
 # 服务器便利指令与权限收紧计划
 
-::: tip 当前状态：停服实施中
+::: tip 当前状态：已部署，待玩家实测
 
-服务端已停止。自研 Fabric 命令模组正在通过 CI 构建；Essential Commands 的首次启动配置、清空 `ops.json` 与无 OP 实测仍未完成，不能将本页当作已上线公告。
+服务端已完成 CI artifact 部署和一次 MCDR 前台加载：自研命令模组与 Essential Commands 均已加载，Essential 配置已按本页目标收紧，`ops.json` 已备份后清空。MCSM 尚需切换到本页 AI 集成章节给出的 MCDR 工作目录与启动命令；随后再用无 OP 玩家实测命令，不能把当前状态当作已经完全验收。
 
 :::
 
@@ -82,14 +82,13 @@ enable_night=false
 
 之后若必须进行管理，通过 MCSM 控制台临时执行 `/op <用户名>`；操作完成后立即执行 `/deop <用户名>`。控制台本身不依赖游戏内 OP 身份。
 
-## 未来实施顺序
+## 已完成与验收顺序
 
-1. 确认所有玩家已下线，并在 MCSM 正常停服。
-2. 备份 `ops.json`、`server.properties`、`mods/` 和 `config/` 中将受影响的文件。
-3. 安装 Essential Commands 的 Fabric 1.21.1 版本，启动一次以生成配置，然后停服调整配置。
-4. 加入提供 `/suicide` 与受白名单保护 `/goto` 的服务端小模组；在其私有配置填入可信玩家的游戏名。
-5. 清空 `ops.json`，启动服务器。
-6. 用一个无 OP 测试账号逐项验证 TPA 请求、拒绝、唯一 Home、Back、Suicide 与 Goto；同时确认 `/gamemode`、`/give`、`/kill <其他玩家>` 均不可用，并确认不在 `gotoAllowedPlayers` 的账号无法使用 `/goto`。
+1. 已完成：停服备份 `ops.json`、`server.properties`、启动脚本与旧网关单元；部署 artifact 后移动到 MCDR 根目录。
+2. 已完成：安装 Essential Commands `0.35.2-mc1.21`，通过首次启动生成真实配置，再关闭不在范围内的便利/生存破坏指令。
+3. 已完成：加入自研 `/suicide` 与受白名单保护的 `/goto`；私有配置暂时允许 `rainyxin` 和 `VincentZyu` 使用 `/goto`，后续新增可信玩家时只改该数组。
+4. 已完成：清空 `ops.json`。
+5. 待完成：在 MCSM 改为 MCDR 启动后，用无 OP 账号逐项验证 TPA 请求、拒绝、唯一 Home、Back、Suicide 与 Goto；同时确认 `/gamemode`、`/give`、`/kill <其他玩家>` 均不可用，并确认不在 `gotoAllowedPlayers` 的账号无法使用 `/goto`。
 
 ::: danger 不在服务器运行时编辑权限文件
 

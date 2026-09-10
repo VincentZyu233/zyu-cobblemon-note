@@ -2,9 +2,9 @@
 
 这是一套给当前 Cobblemon 朋友服准备的只读辅助能力：它让网页、游戏内命令和兼容 MCP 的 AI 在需要时读取真实进度，而不是根据截图猜测。它不会给物品、移动宝可梦、执行 OP 指令、加载区块或修改世界数据。
 
-::: tip 当前状态：停服部署中
+::: tip 当前状态：部署已验收，待 MCSM 接管
 
-服务端已停止，代码正在收敛并由 CI 构建。目录迁移、MCDR 初始化、插件安装、私有密钥配置与前台验收尚未完成；未通过验收前不恢复服务端。
+服务端已完成 CI artifact 部署、目录迁移、MCDR 初始化、私有密钥配置和一次前台验收。Bridge HMAC 状态读取、网关未授权拒绝和网页公开入口均已验证；临时验收进程已停止，等待 MCSM 改为下方的 MCDR 启动设置后恢复常驻。
 
 :::
 
@@ -13,7 +13,7 @@
 - Fabric 数据桥与 Node 网关源码已在本仓库，CI 可构建 Fabric Jar、网关部署包和 MCDR Web 插件 Artifact。
 - 自研 MCDR NiceGUI 面板已完成源码和烟雾测试；网页默认端口已调整为 `26697`，但远程 MCDR 尚未部署。
 - Node 网关已支持游戏内 `/ai question`、网页登录后的 `/v1/web-questions` 与 MCP stdio，只监听 `127.0.0.1:25932`。
-- 远程 Cobblemon 服务端仍位于 `/data/data1/minecraft/cobblemon`，尚未移动到 MCDR 管理目录。
+- Cobblemon 服务端已移动至 `/data/data1/minecraft/mcdr-cobblemon/cobblemon`，由 MCDR 的 `working_directory` 管理。
 - `Games_AI` 的 fork 已整理：`main` 对齐上游，`tyy-superflat-test` 保留天翼云超平坦测试服工作。曾创建的 `zyu-cobblemon` 只读实验分支未部署，后续会删除，不进入最终架构。
 - 原有的实时助手、MCDR 面板、部署连接、游戏内/MCP 用法四篇说明已经与本页规划合并；侧栏只保留本页入口。
 
@@ -152,6 +152,17 @@ encoding: utf8
 
 4. 只安装 Here 和自研 Web 插件。MCDR 前台以 `uv run mcdreforged` 验收，稳定后再由 MCSM 管理常驻。
 5. 从私有凭据文件生成网页密码哈希和 `WEB_AI_TOKEN`；网关 `.env` 使用 `600` 权限。
+
+### MCSM 接管设置
+
+前台验收完成后，MCSM 不再直接执行游戏目录里的 `qidong.sh`，而是启动 MCDR。把实例工作目录和启动命令设为：
+
+```text
+工作目录：/data/data1/minecraft/mcdr-cobblemon
+启动命令：/data/data1/minecraft/mcdr-cobblemon/.venv/bin/mcdreforged start
+```
+
+这条命令不依赖 shell 激活 `uv`，因为它直接使用已验证的 Python 3.12 虚拟环境。MCDR 会在该目录中读取 `config.yml`，并在 `cobblemon/` 下执行 `./qidong.sh`；不要把 MCSM 的工作目录再设回旧的 `/data/data1/minecraft/cobblemon`。
 
 部署时网关环境文件至少包含：
 
