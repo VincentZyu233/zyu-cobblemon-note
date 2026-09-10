@@ -4,6 +4,7 @@ docs/.vitepress/dist/
 .env
 .env.*
 !.env.example
+AGENTS.local.md
 *.log
 .DS_Store
 .vscode/

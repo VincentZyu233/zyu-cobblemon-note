@@ -9,6 +9,7 @@ const secret = required('BRIDGE_SECRET');
 const bridgeUrl = required('BRIDGE_URL').replace(/\/$/, '');
 const baseUrl = (process.env.OPENAI_BASE_URL ?? 'https://api.openai.com/v1').replace(/\/$/, '');
 const model = required('OPENAI_MODEL');
+const mode = process.env.GATEWAY_MODE ?? 'both';
 const cooldown = Number(process.env.QUESTION_COOLDOWN_SECONDS ?? 60) * 1000;
 const dailyLimit = Number(process.env.MAX_DAILY_QUESTIONS ?? 100);
 const usage = new Map<string, number>(); let daily = { day: '', count: 0 };
@@ -40,21 +41,26 @@ const tools: Array<[string, string, Record<string, z.ZodType>, (args: Record<str
 ];
 for (const [name, description, inputSchema, handler] of tools) mcp.registerTool(name, { description, inputSchema }, async args => text(await handler(args as Record<string, string>)));
 const host = process.env.GATEWAY_HOST ?? '127.0.0.1', port = Number(process.env.GATEWAY_PORT ?? 25932);
-createServer(async (request, response) => {
-  if (request.method !== 'POST' || request.url !== '/v1/questions') { response.writeHead(404).end(); return; }
-  const body = await new Promise<string>(resolve => { let value = ''; request.on('data', part => value += part); request.on('end', () => resolve(value)); });
-  const timestamp = request.headers['x-zcn-timestamp'] as string, nonce = request.headers['x-zcn-nonce'] as string, actual = request.headers['x-zcn-signature'] as string;
-  const expected = signature(timestamp ?? '', nonce ?? '', 'POST', '/v1/questions', body);
-  const expectedBytes = Buffer.from(expected), actualBytes = Buffer.from(actual ?? '');
-  if (!timestamp || Math.abs(Date.now() / 1000 - Number(timestamp)) > 60 || !actual || actualBytes.length !== expectedBytes.length || !timingSafeEqual(expectedBytes, actualBytes)) { response.writeHead(401).end(); return; }
-  let question: { requestId: string; player: string; playerUuid: string; question: string };
-  try { question = JSON.parse(body); } catch { response.writeHead(400).end(); return; }
-  if (!question.requestId || !question.player || !question.playerUuid || !question.question || !allowed(question.playerUuid) || question.question.length > 500) { response.writeHead(429).end(); return; }
-  response.writeHead(202).end();
-  answerInFlight = true;
-  void answer(question.question, question.player)
-    .then(value => bridge('/v1/answers', 'POST', JSON.stringify({ requestId: question.requestId, answer: value })))
-    .catch(error => bridge('/v1/answers', 'POST', JSON.stringify({ requestId: question.requestId, answer: `暂时无法回答：${error.message}` })).catch(() => undefined))
-    .finally(() => { answerInFlight = false; });
-}).listen(port, host);
-await mcp.connect(new StdioServerTransport());
+if (!['http', 'mcp', 'both'].includes(mode)) throw new Error('GATEWAY_MODE must be http, mcp, or both');
+
+if (mode !== 'mcp') {
+  createServer(async (request, response) => {
+    if (request.method !== 'POST' || request.url !== '/v1/questions') { response.writeHead(404).end(); return; }
+    const body = await new Promise<string>(resolve => { let value = ''; request.on('data', part => value += part); request.on('end', () => resolve(value)); });
+    const timestamp = request.headers['x-zcn-timestamp'] as string, nonce = request.headers['x-zcn-nonce'] as string, actual = request.headers['x-zcn-signature'] as string;
+    const expected = signature(timestamp ?? '', nonce ?? '', 'POST', '/v1/questions', body);
+    const expectedBytes = Buffer.from(expected), actualBytes = Buffer.from(actual ?? '');
+    if (!timestamp || Math.abs(Date.now() / 1000 - Number(timestamp)) > 60 || !actual || actualBytes.length !== expectedBytes.length || !timingSafeEqual(expectedBytes, actualBytes)) { response.writeHead(401).end(); return; }
+    let question: { requestId: string; player: string; playerUuid: string; question: string };
+    try { question = JSON.parse(body); } catch { response.writeHead(400).end(); return; }
+    if (!question.requestId || !question.player || !question.playerUuid || !question.question || !allowed(question.playerUuid) || question.question.length > 500) { response.writeHead(429).end(); return; }
+    response.writeHead(202).end();
+    answerInFlight = true;
+    void answer(question.question, question.player)
+      .then(value => bridge('/v1/answers', 'POST', JSON.stringify({ requestId: question.requestId, answer: value })))
+      .catch(error => bridge('/v1/answers', 'POST', JSON.stringify({ requestId: question.requestId, answer: `暂时无法回答：${error.message}` })).catch(() => undefined))
+      .finally(() => { answerInFlight = false; });
+  }).listen(port, host);
+}
+
+if (mode !== 'http') await mcp.connect(new StdioServerTransport());
