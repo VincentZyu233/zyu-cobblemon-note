@@ -2,9 +2,9 @@
 
 这是一套给当前 Cobblemon 朋友服准备的只读辅助能力：它让网页、游戏内命令和兼容 MCP 的 AI 在需要时读取真实进度，而不是根据截图猜测。它不会给物品、移动宝可梦、执行 OP 指令、加载区块或修改世界数据。
 
-::: warning 当前服务器有人游玩
+::: tip 当前状态：停服部署中
 
-本页记录的是当前状态和后续方案。MCDR 接管、目录移动、插件安装、密钥配置与服务端重启均应等服务器空闲后再进行。
+服务端已停止，代码正在收敛并由 CI 构建。目录迁移、MCDR 初始化、插件安装、私有密钥配置与前台验收尚未完成；未通过验收前不恢复服务端。
 
 :::
 
@@ -12,7 +12,7 @@
 
 - Fabric 数据桥与 Node 网关源码已在本仓库，CI 可构建 Fabric Jar、网关部署包和 MCDR Web 插件 Artifact。
 - 自研 MCDR NiceGUI 面板已完成源码和烟雾测试；网页默认端口已调整为 `26697`，但远程 MCDR 尚未部署。
-- 现有 Node 网关已支持游戏内 `/ai question` 与 MCP stdio，并仅计划监听 `127.0.0.1:25932`。
+- Node 网关已支持游戏内 `/ai question`、网页登录后的 `/v1/web-questions` 与 MCP stdio，只监听 `127.0.0.1:25932`。
 - 远程 Cobblemon 服务端仍位于 `/data/data1/minecraft/cobblemon`，尚未移动到 MCDR 管理目录。
 - `Games_AI` 的 fork 已整理：`main` 对齐上游，`tyy-superflat-test` 保留天翼云超平坦测试服工作。曾创建的 `zyu-cobblemon` 只读实验分支未部署，后续会删除，不进入最终架构。
 - 原有的实时助手、MCDR 面板、部署连接、游戏内/MCP 用法四篇说明已经与本页规划合并；侧栏只保留本页入口。
@@ -129,13 +129,13 @@ Node 网关通过 stdio 暴露 MCP，不监听公网 HTTP。兼容 MCP 的 Agent
 
 ## 后续规划
 
-### 服务器空闲后：代码与文档收敛
+### 已完成的代码收敛
 
-1. 删除未部署的 `Games_AI/zyu-cobblemon` 本地与远端分支，保留 `main` 镜像和 `tyy-superflat-test`。
-2. MCDR Web 移除 `Games_AI` 依赖，保留登录；登录后显示在线玩家选择器和网页 AI 区域。
-3. Node 网关新增仅回环可访问的 `/v1/web-questions`，验证独立 token，复用全服单并发、60 秒冷却、每日 100 次与 500 字限制。
-4. 网关从 `/data/data1/aaa_from_git_aaa/cobblemon` 有界检索源码片段，并将片段、实时服务器状态和所选玩家进度提供给模型。
-5. 本页已作为唯一 AI 集成入口；后续维护只更新本页，避免再次拆分职责与部署说明。
+1. `Games_AI` 不进入最终架构；其 fork 仅保留 `main` 上游镜像与 `tyy-superflat-test` 历史分支。
+2. MCDR Web 已移除 Games_AI 依赖，登录后只允许从在线玩家中选择一位作为 AI 上下文。
+3. Node 网关已实现仅回环可访问的 `/v1/web-questions`，以独立 token 验证，并与游戏内问答共用单并发、60 秒冷却、每日 100 次与 500 字限制。
+4. 网关会在 `/data/data1/aaa_from_git_aaa/cobblemon` 内有界检索最多 120 个候选源码文件、最多 6 段和 12 KB 片段，再连同实时状态交给模型。
+5. 本页是唯一 AI 集成入口；后续维护只更新本页，避免再次拆分职责与部署说明。
 
 ### 通过 CI 后：远程部署
 

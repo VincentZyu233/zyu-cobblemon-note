@@ -12,6 +12,8 @@ data class BridgeConfig(
     var sharedSecret: String = "",
     var gatewayQuestionUrl: String = "http://127.0.0.1:25932/v1/questions",
     var accessMode: String = "public_full",
+    var gotoAllowedPlayers: MutableList<String> = mutableListOf(),
+    var suicideEnabled: Boolean = true,
     var maxRegionBlocks: Int = 32768,
     var bases: MutableList<BaseDefinition> = mutableListOf()
 ) {

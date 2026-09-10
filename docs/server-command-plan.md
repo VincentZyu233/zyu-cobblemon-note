@@ -1,15 +1,15 @@
 # 服务器便利指令与权限收紧计划
 
-::: warning 当前状态：暂不执行
+::: tip 当前状态：停服实施中
 
-服务器仍有人游玩。本页只记录后续方案；尚未下载或安装模组，未修改 MCSM、服务端配置、`ops.json`，也未重启服务器。
+服务端已停止。自研 Fabric 命令模组正在通过 CI 构建；Essential Commands 的首次启动配置、清空 `ops.json` 与无 OP 实测仍未完成，不能将本页当作已上线公告。
 
 :::
 
 ## 目标
 
 - 移除所有玩家的 OP 身份，关闭原版管理指令带来的创造、给物品、改游戏规则等权限。
-- 仍向普通玩家开放常用的多人便利指令：`/tpa`、`/tpahere`、`/tpaccept`、`/tpdeny`、`/home`、`/back` 和 `/suicide`。
+- 仍向普通玩家开放常用的多人便利指令：`/tpa`、`/tpahere`、`/tpaccept`、`/tpdeny`、`/home`、`/back` 和 `/suicide`；可信玩家可使用完整原版语法的 `/goto`。
 - 每位玩家最多设置一个家。
 - 不开放 `/fly`、`/invuln`、`/top`、`/day`、`/night`、全服传送点或其他会改变生存平衡的指令。
 
@@ -63,7 +63,12 @@ enable_night=false
 
 当前没有找到可验证的 Fabric 1.21.1 现成 `/suicide` 模组构建：部分项目页面标注支持 1.21.1，但实际发布列表没有对应 Fabric Jar，不能直接安装。
 
-后续采用一个极小的纯服务端 Fabric 模组：只注册 `/suicide`，仅让执行者自身死亡，不接收玩家目标参数，也不授予 `/kill`、`/give`、`/gamemode` 等权限。这样既保留便利性，也不打开作弊入口。
+后续采用同仓库的极小纯服务端 Fabric 模组，提供两个明确边界的便利命令：
+
+- `/suicide`：仅让执行者自身死亡，不接收玩家目标参数，也不授予 `/kill`、`/give`、`/gamemode` 等权限。
+- `/goto`：受控地复用原版 `/teleport` 命令树，因此坐标、实体目标、旋转和 `facing` 等原版语法都有效。它并不默认向所有普通玩家开放：仅配置文件 `gotoAllowedPlayers` 白名单中的名字可用，临时 OP 也可用。清空 OP 前必须先把可信玩家填入该数组；这避免任何路人使用 `@a` 等选择器传送整服玩家。
+
+`/goto` 在执行时只为这一条命令构造原版所需的权限上下文，不会赋予执行者 `/give`、`/gamemode`、`/kill` 或其他 OP 命令权限。默认配置中的白名单为空，表示停服部署后需要显式填写，不会意外开放传送。
 
 ## 去除 OP 的实施方式
 
@@ -82,9 +87,9 @@ enable_night=false
 1. 确认所有玩家已下线，并在 MCSM 正常停服。
 2. 备份 `ops.json`、`server.properties`、`mods/` 和 `config/` 中将受影响的文件。
 3. 安装 Essential Commands 的 Fabric 1.21.1 版本，启动一次以生成配置，然后停服调整配置。
-4. 加入仅实现 `/suicide` 的服务端小模组。
+4. 加入提供 `/suicide` 与受白名单保护 `/goto` 的服务端小模组；在其私有配置填入可信玩家的游戏名。
 5. 清空 `ops.json`，启动服务器。
-6. 用一个无 OP 测试账号逐项验证 TPA 请求、拒绝、唯一 Home、Back 与 Suicide；同时确认 `/gamemode`、`/give`、`/kill <其他玩家>` 均不可用。
+6. 用一个无 OP 测试账号逐项验证 TPA 请求、拒绝、唯一 Home、Back、Suicide 与 Goto；同时确认 `/gamemode`、`/give`、`/kill <其他玩家>` 均不可用，并确认不在 `gotoAllowedPlayers` 的账号无法使用 `/goto`。
 
 ::: danger 不在服务器运行时编辑权限文件
 

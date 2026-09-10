@@ -123,6 +123,34 @@ WantedBy=timers.target
 
 上传任务可由另一只 timer 每 10 分钟触发。脚本通过 root-only 的 rclone 配置访问本机 OpenList WebDAV，远端路径应限制在 `<REMOTE_BACKUP_PATH>`，并在成功确认后轮换超过保留数量的旧归档。
 
+```ini
+# /etc/systemd/system/minecraft-backup-upload.service
+[Unit]
+Description=Upload Minecraft archives through local OpenList
+After=network-online.target openlist-backup.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/usr/local/lib/minecraft-backup/upload.py
+```
+
+```ini
+# /etc/systemd/system/minecraft-backup-upload.timer
+[Unit]
+Description=Retry Minecraft cloud uploads every ten minutes
+
+[Timer]
+OnCalendar=*-*-* *:00,10,20,30,40,50:00
+Persistent=true
+AccuracySec=1s
+Unit=minecraft-backup-upload.service
+
+[Install]
+WantedBy=timers.target
+```
+
 启用或修改单元文件后执行：
 
 ```bash
@@ -134,6 +162,10 @@ systemctl list-timers --all | grep minecraft-backup
 
 `Persistent=true` 会在服务器停机错过触发时间后补跑一次；它适合备份，但应确认磁盘空间与服务器负载足以处理补跑任务。
 
+::: tip 恢复 timer 后，上传不一定立刻包含新归档
+创建与上传 timer 是独立的。恢复后两者可能同时补跑：上传扫描可能先于新归档完成，此时它会在下一轮扫描再上传该归档。先查看创建日志确认归档成功，再等待下一次上传扫描，或手动启动一次上传服务；不要把“第一次扫描没有新文件”误判为上传失败。
+:::
+
 ## 日常检查与恢复演练
 
 每天或每周查看计时器、最近运行日志和本地归档数量：
@@ -142,8 +174,10 @@ systemctl list-timers --all | grep minecraft-backup
 systemctl list-timers --all | grep minecraft-backup
 journalctl -u minecraft-backup-create.service -n 50 --no-pager
 journalctl -u minecraft-backup-upload.service -n 50 --no-pager
-find <ARCHIVE_DIR> -maxdepth 1 -name '*.tar.zst' -printf '%f\n' | sort
+find "<ARCHIVE_DIR>" -maxdepth 1 -name '*.tar.zst' -printf '%f\n' | sort
 ```
+
+归档完成后，上传验证应分三步：确认创建日志出现成功归档文件名；确认上传服务退出成功；再用受限的 WebDAV/rclone 远端查看同名 `.tar.zst` 与 `.sha256`，并比较文件大小。远端列表有缓存时，先等待下一次扫描或刷新目录缓存后再判断。
 
 备份真正可靠的标准不是“看到上传成功”，而是能恢复。定期从异地下载一个较早归档，验证 SHA-256 和 zstd，再解压到隔离目录检查 `level.dat`、维度目录和模组配置是否齐全。不要直接覆盖正在运行的世界目录进行演练。
 

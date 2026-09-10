@@ -10,7 +10,7 @@
 
 ## 运行时配置
 
-至少填入与 Fabric 模组一致的 `bridge_secret`。网页默认公开只读状态与物资查询；AI 请求需要登录且仅在安装了含 `ask_readonly()` API 的 `Games_AI` Cobblemon 分支后可用。
+至少填入与 Fabric 模组一致的 `bridge_secret`，并填入与 Node 网关 `.env` 一致的 `web_ai_token`。网页默认公开只读状态与物资查询；AI 请求需要登录，由本机回环地址的 Node 网关统一限流、读取 Bridge 上下文并调用模型。网页插件不依赖 Games_AI。
 
 `auth.password_hash` 使用 PBKDF2-SHA256 格式。部署前使用下方独立工具生成：
 

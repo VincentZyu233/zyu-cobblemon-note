@@ -3,7 +3,6 @@ from __future__ import annotations
 import base64
 import hashlib
 import hmac
-import importlib
 import json
 import secrets
 import threading
@@ -11,7 +10,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -28,14 +27,13 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "port": 26697,
     "bridge_url": "http://127.0.0.1:25931",
     "bridge_secret": "",
+    "gateway_url": "http://127.0.0.1:25932",
+    "web_ai_token": "",
     "web_session_secret": "",
     "auth": {"username": "keai", "password_hash": ""},
     "ai": {
         "enabled": True,
-        "source_root": "/data/data1/aaa_from_git_aaa/cobblemon",
         "max_question_length": 500,
-        "cooldown_seconds": 60,
-        "daily_limit": 100,
     },
 }
 
@@ -91,21 +89,11 @@ class BridgeClient:
 
 
 @dataclass
-class RateLimit:
-    last_at: float = 0.0
-    day: str = ""
-    global_count: int = 0
-
-
-@dataclass
 class DashboardState:
     server: PluginServerInterface
     config: dict[str, Any]
     uvicorn_server: uvicorn.Server | None = None
     uvicorn_thread: threading.Thread | None = None
-    rate_limit: RateLimit = field(default_factory=RateLimit)
-    ai_in_flight: bool = False
-    lock: threading.Lock = field(default_factory=threading.Lock)
 
     @property
     def bridge(self) -> BridgeClient:
@@ -149,45 +137,32 @@ class DashboardState:
                         })
         return rows, incomplete
 
-    def games_ai_ask(self):
-        try:
-            return getattr(importlib.import_module("games_ai"), "ask_readonly", None)
-        except ImportError:
-            return None
-
-    def ask_ai(self, question: str, identity: str) -> str:
+    def ask_ai(self, question: str, player: str) -> str:
         ai = self.config["ai"]
         if not ai.get("enabled"):
             raise RuntimeError("AI 功能在配置中被关闭")
         if not question or len(question) > int(ai["max_question_length"]):
             raise RuntimeError("问题不能为空且最多 500 字")
-        if not self.acquire_question_slot():
-            raise RuntimeError("AI 正在冷却、忙碌或已达到今日额度")
-        ask_readonly = self.games_ai_ask()
-        if not callable(ask_readonly):
-            self.release_question_slot()
-            raise RuntimeError("Games_AI Cobblemon 分支尚未提供 ask_readonly()")
+        token = str(self.config["web_ai_token"])
+        if not token:
+            raise RuntimeError("尚未配置 web_ai_token")
+        body = json.dumps({"question": question, "player": player}, ensure_ascii=False).encode("utf-8")
+        request = urllib.request.Request(
+            str(self.config["gateway_url"]).rstrip("/") + "/v1/web-questions",
+            data=body,
+            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+            method="POST",
+        )
         try:
-            return str(ask_readonly(question=question, identity=identity, source_root=str(ai["source_root"])))
-        finally:
-            self.release_question_slot()
-
-    def acquire_question_slot(self) -> bool:
-        now, today = time.time(), time.strftime("%Y-%m-%d", time.gmtime())
-        with self.lock:
-            if self.rate_limit.day != today:
-                self.rate_limit.day, self.rate_limit.global_count = today, 0
-            ai = self.config["ai"]
-            if self.ai_in_flight or self.rate_limit.global_count >= int(ai["daily_limit"]) or now - self.rate_limit.last_at < int(ai["cooldown_seconds"]):
-                return False
-            self.ai_in_flight = True
-            self.rate_limit.last_at = now
-            self.rate_limit.global_count += 1
-            return True
-
-    def release_question_slot(self) -> None:
-        with self.lock:
-            self.ai_in_flight = False
+            with urllib.request.urlopen(request, timeout=45) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+        except urllib.error.HTTPError as error:
+            if error.code == 401:
+                raise RuntimeError("AI 正在冷却、忙碌或配置凭据无效") from error
+            raise RuntimeError(f"AI 网关返回 HTTP {error.code}") from error
+        if not isinstance(payload.get("answer"), str):
+            raise RuntimeError(str(payload.get("error", "AI 网关没有返回回答")))
+        return payload["answer"]
 
     def start(self) -> None:
         config = uvicorn.Config(NICEGUI_APP, host=str(self.config["host"]), port=int(self.config["port"]), log_level="warning", access_log=False)
@@ -254,14 +229,17 @@ async def index() -> None:
         if app.storage.user.get("authenticated"):
             with ui.card().classes("w-full p-4"):
                 ui.label("AI 查询").classes("text-lg font-bold")
+                selected_player = ui.select(options=[], label="作为哪位在线玩家提问").classes("w-full")
                 question = ui.textarea(placeholder="例如：基地里还有多少铁？").props("maxlength=500").classes("w-full")
                 answer = ui.markdown().classes("w-full")
 
                 async def ask() -> None:
-                    identity = app.storage.user.setdefault("identity", secrets.token_urlsafe(12))
+                    if not selected_player.value:
+                        answer.set_content("> 请先选择一位在线玩家。")
+                        return
                     answer.set_content("正在查询...")
                     try:
-                        answer.set_content(await run.io_bound(state.ask_ai, question.value, f"web:{identity}"))
+                        answer.set_content(await run.io_bound(state.ask_ai, question.value, selected_player.value))
                     except Exception as error:
                         answer.set_content(f"> 请求失败：{error}")
 
@@ -283,6 +261,12 @@ async def index() -> None:
             values["MSPT"].text = str(status.get("mspt", "-"))
             values["在线"].text = f"{status.get('onlinePlayers', 0)}/{status.get('maxPlayers', 0)}"
             refreshed.text = f"刷新于 {time.strftime('%H:%M:%S')}"
+            if app.storage.user.get("authenticated"):
+                names = [str(player.get("name")) for player in details if player.get("name")]
+                selected_player.options = names
+                if selected_player.value not in names:
+                    selected_player.value = names[0] if names else None
+                selected_player.update()
             players.clear()
             with players:
                 if not details:

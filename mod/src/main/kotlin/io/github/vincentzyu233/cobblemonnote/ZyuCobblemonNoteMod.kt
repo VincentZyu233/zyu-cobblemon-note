@@ -83,6 +83,26 @@ class ZyuCobblemonNoteMod : ModInitializer {
     private fun errorResponse(message: String) = JsonObject().apply { addProperty("error", message) }
 
     private fun registerCommands(dispatcher: com.mojang.brigadier.CommandDispatcher<CommandSourceStack>) {
+        val teleport = dispatcher.root.getChild("teleport") ?: dispatcher.root.getChild("tp")
+        if (teleport == null) {
+            LOGGER.warn("Vanilla teleport command was not registered; /goto is unavailable")
+        } else {
+            dispatcher.register(
+                Commands.literal("goto")
+                    .requires(::canGoto)
+                    // Keep vanilla /teleport parsing and behavior, while granting level 2 only to this command execution.
+                    .redirect(teleport) { context -> context.source.withPermission(2) }
+            )
+        }
+        dispatcher.register(
+            Commands.literal("suicide")
+                .requires { config.suicideEnabled && it.entity is ServerPlayer }
+                .executes { context ->
+                    val player = context.source.playerOrException
+                    player.kill(player.level())
+                    1
+                }
+        )
         dispatcher.register(Commands.literal("ai")
             .then(Commands.literal("status").executes { context -> respond(context.source) { snapshots.status() } })
             .then(Commands.literal("players").executes { context ->
@@ -111,6 +131,11 @@ class ZyuCobblemonNoteMod : ModInitializer {
         "admin_only" -> source.hasPermission(2)
         "self_and_admin" -> source.hasPermission(2) || (!shared && requestedName != null && (source.entity as? ServerPlayer)?.gameProfile?.name.equals(requestedName, true))
         else -> true
+    }
+    private fun canGoto(source: CommandSourceStack): Boolean {
+        if (source.hasPermission(2)) return true
+        val player = source.entity as? ServerPlayer ?: return false
+        return config.gotoAllowedPlayers.any { it.equals(player.gameProfile.name, ignoreCase = true) }
     }
     private fun canQuestion(source: CommandSourceStack): Boolean = config.accessMode.lowercase() != "admin_only" || source.hasPermission(2)
     private fun deny(source: CommandSourceStack): Int { source.sendFailure(Component.literal("[AI] 当前 accessMode 不允许此查询。")); return 0 }
