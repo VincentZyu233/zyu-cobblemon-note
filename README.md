@@ -1,10 +1,10 @@
-# Zyu 的 Cobblemon 游玩笔记
+# 🔴 Zyu 的 Cobblemon 游玩笔记
 
 [![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-%E5%9C%A8%E7%BA%BF%E9%98%85%E8%AF%BB-c93435?style=for-the-badge&logo=github&logoColor=ffffff&labelColor=111111)](https://vincentzyu233.github.io/zyu-cobblemon-note/)
 
 这是 Zyu 游玩个人 Minecraft 宝可梦整合包时整理的中文笔记，记录实际遇到的资源、捕捉、培育、机器、多人游玩与服务器维护问题。内容以便于自己和同伴查阅为目标，仅供参考，不是 Cobblemon 或任何整合包的官方文档。
 
-## 适用范围与注意事项
+## 🧭 适用范围与注意事项
 
 - 游戏版本：Minecraft Java Edition 1.21.1。
 - 模组加载器：Fabric Loader 0.19.5。
@@ -16,7 +16,7 @@
 
 > Fabric 构建产物目前只通过 GitHub Actions artifact 提供测试部署。只有在真实服务器验证稳定后才会创建 GitHub Release。
 
-## 游玩截图
+## 📸 游玩截图
 
 | 战斗与捕捉 | 队伍成长 |
 | --- | --- |
@@ -32,7 +32,7 @@
 | --- | --- |
 | <img src="docs/public/assets/readme/pasture-ui.png" alt="牧场方块界面" width="100%"> | <img src="docs/public/assets/readme/campfire-pot-ui.png" alt="营火锅制作界面" width="100%"> |
 
-## 本地运行
+## 💻 本地运行
 
 ```powershell
 npm ci
@@ -41,7 +41,7 @@ npm run dev
 
 默认访问地址为 `http://127.0.0.1:60908/zyu-cobblemon-note/`。
 
-## 构建
+## 🏗️ 构建
 
 ```powershell
 npm run build
@@ -49,7 +49,7 @@ npm run build
 
 生成物位于 `docs/.vitepress/dist/`，由 CI 上传部署，不提交到仓库。
 
-## AI 集成开发
+## 🤖 AI 集成开发
 
 - `mod/`：Fabric 1.21.1 服务端模组，提供受签名保护的 loopback 数据接口和 `/ai` 命令。
 - `gateway/`：运行在服务端同机的 MCP stdio 服务与 OpenAI 问答网关；密钥仅放在远程未提交的 `gateway/.env`，绝不提交。MCP 客户端可通过 SSH 本地端口转发接入。

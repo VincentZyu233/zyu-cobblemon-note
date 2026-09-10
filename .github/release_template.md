@@ -1,4 +1,8 @@
-## Zyu Cobblemon Note 测试构建
+## 🧪 Zyu Cobblemon Note 测试构建
+
+[![Fabric 模组 · Kotlin](https://img.shields.io/badge/Fabric_%E6%A8%A1%E7%BB%84-Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://github.com/VincentZyu233/zyu-cobblemon-note/releases/download/{{RELEASE_TAG}}/{{FABRIC_ASSET}})
+[![MCDR 网页面板 · Python](https://img.shields.io/badge/MCDR_%E7%BD%91%E9%A1%B5%E9%9D%A2%E6%9D%BF-Python-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://github.com/VincentZyu233/zyu-cobblemon-note/releases/download/{{RELEASE_TAG}}/{{MCDR_ASSET}})
+[![AI 网关 · Node.js](https://img.shields.io/badge/AI_%E7%BD%91%E5%85%B3-Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://github.com/VincentZyu233/zyu-cobblemon-note/releases/download/{{RELEASE_TAG}}/zyu-cobblemon-note-gateway.zip)
 
 这是由 `[build-release]` 显式触发的预发布构建，不代表已在正式服务器长期验证稳定。
 

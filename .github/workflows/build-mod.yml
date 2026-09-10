@@ -66,16 +66,22 @@ jobs:
     if: github.event_name == 'push' && contains(github.event.head_commit.message, '[build-release]')
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           pattern: zyu-cobblemon-note-server-*
           merge-multiple: true
+      - name: Render release notes with direct asset links
+        env:
+          RELEASE_TAG: test-${{ github.sha }}
+        run: |
+          node -e "const fs=require('fs'); const fabric=fs.readdirSync('fabric').find(name=>name.endsWith('.jar')); const mcdr=fs.readdirSync('mcdr').find(name=>name.endsWith('.mcdr')); if(!fabric || !mcdr) throw new Error('Release assets missing'); const template=fs.readFileSync('.github/release_template.md','utf8'); const rendered=template.replaceAll('{{RELEASE_TAG}}', process.env.RELEASE_TAG).replaceAll('{{FABRIC_ASSET}}', fabric).replaceAll('{{MCDR_ASSET}}', mcdr); fs.writeFileSync('release_notes.md', rendered);"
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: test-${{ github.sha }}
           name: Zyu Cobblemon Note ${{ github.sha }}
           prerelease: true
-          body_path: .github/release_template.md
+          body_path: release_notes.md
           files: |
             fabric/*.jar
             mcdr/*.mcdr
