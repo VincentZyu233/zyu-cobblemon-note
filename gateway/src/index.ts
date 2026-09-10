@@ -198,13 +198,15 @@ async function handleHttp(request: IncomingMessage, response: ServerResponse): P
   }
 
   if (request.url === '/v1/questions') {
+    if (!hasValidBridgeSignature(request, body) || !validQuestion(value)) return reply(response, 401);
     const gameQuestion = value as Partial<GameQuestion>;
-    if (!hasValidBridgeSignature(request, body) || !validQuestion(gameQuestion) || typeof gameQuestion.requestId !== 'string' || typeof gameQuestion.playerUuid !== 'string' || !allowed(gameQuestion.playerUuid)) return reply(response, 401);
+    if (typeof gameQuestion.requestId !== 'string' || typeof gameQuestion.playerUuid !== 'string' || !allowed(gameQuestion.playerUuid)) return reply(response, 401);
+    const verifiedQuestion = gameQuestion as GameQuestion;
     reply(response, 202);
     answerInFlight = true;
-    void answer(gameQuestion.question, gameQuestion.player)
-      .then(answerText => bridge('/v1/answers', 'POST', JSON.stringify({ requestId: gameQuestion.requestId, answer: answerText })))
-      .catch(error => bridge('/v1/answers', 'POST', JSON.stringify({ requestId: gameQuestion.requestId, answer: `暂时无法回答：${error.message}` })).catch(() => undefined))
+    void answer(verifiedQuestion.question, verifiedQuestion.player)
+      .then(answerText => bridge('/v1/answers', 'POST', JSON.stringify({ requestId: verifiedQuestion.requestId, answer: answerText })))
+      .catch(error => bridge('/v1/answers', 'POST', JSON.stringify({ requestId: verifiedQuestion.requestId, answer: `暂时无法回答：${error.message}` })).catch(() => undefined))
       .finally(() => { answerInFlight = false; });
     return;
   }
