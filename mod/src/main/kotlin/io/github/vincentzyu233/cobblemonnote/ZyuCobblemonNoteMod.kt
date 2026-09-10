@@ -99,7 +99,7 @@ class ZyuCobblemonNoteMod : ModInitializer {
                 .requires { config.suicideEnabled && it.entity is ServerPlayer }
                 .executes { context ->
                     val player = context.source.playerOrException
-                    player.kill(player.level())
+                    player.kill()
                     1
                 }
         )
