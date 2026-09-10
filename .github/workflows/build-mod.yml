@@ -1,4 +1,4 @@
-name: Build Fabric mod
+name: Build server artifacts
 
 on:
   push:
@@ -23,12 +23,43 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew build
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: gateway/package-lock.json
+      - name: Build Node gateway
+        working-directory: gateway
+        run: |
+          npm ci
+          npm run build
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v5
+      - name: Validate and package MCDR plugin
+        working-directory: mcdr
+        run: |
+          uv sync --group dev --python 3.12
+          uv run python -m py_compile zyu_cobblemon_web/__init__.py build.py create_password_hash.py
+          uv run python -c "import zyu_cobblemon_web; print('MCDR plugin import OK')"
+          uv run python tests/smoke_server.py
+          uv run python build.py
+      - name: Assemble deployable server package
+        run: |
+          mkdir -p server-package/fabric server-package/gateway server-package/mcdr
+          cp mod/build/libs/*.jar server-package/fabric/
+          rm -f server-package/fabric/*-sources.jar
+          cp gateway/package.json gateway/package-lock.json gateway/.env.example server-package/gateway/
+          cp -R gateway/dist server-package/gateway/dist
+          cp mcdr/dist/zyu-cobblemon-web.mcdr server-package/mcdr/
+          node -e "const fs=require('fs'); fs.writeFileSync('server-package/manifest.json', JSON.stringify({commit: process.env.GITHUB_SHA, build: process.env.GITHUB_RUN_ID, artifacts:['fabric','gateway','mcdr']}, null, 2)+'\\n')"
+          (cd server-package/gateway && zip -qr ../zyu-cobblemon-note-gateway.zip .)
+          sha256sum server-package/fabric/*.jar server-package/mcdr/*.mcdr server-package/zyu-cobblemon-note-gateway.zip > server-package/SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
-          name: zyu-cobblemon-note-fabric-${{ github.sha }}
-          path: |
-            mod/build/libs/*.jar
-            !mod/build/libs/*-sources.jar
+          name: zyu-cobblemon-note-server-${{ github.sha }}
+          path: server-package
           if-no-files-found: error
   release:
     needs: build
@@ -37,7 +68,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          pattern: zyu-cobblemon-note-fabric-*
+          pattern: zyu-cobblemon-note-server-*
           merge-multiple: true
       - uses: softprops/action-gh-release@v2
         with:
@@ -45,4 +76,9 @@ jobs:
           name: Zyu Cobblemon Note ${{ github.sha }}
           prerelease: true
           body_path: .github/release_template.md
-          files: '*.jar'
+          files: |
+            fabric/*.jar
+            mcdr/*.mcdr
+            zyu-cobblemon-note-gateway.zip
+            manifest.json
+            SHA256SUMS

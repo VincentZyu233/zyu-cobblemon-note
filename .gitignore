@@ -17,6 +17,9 @@ gateway/dist/
 mod/.gradle/
 mod/build/
 mod/run/
+mcdr/.venv/
+mcdr/dist/
+mcdr/**/__pycache__/
 
 temp/
 tmp/

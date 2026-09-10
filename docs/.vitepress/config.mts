@@ -65,6 +65,7 @@ export default defineConfig({
           { text: '定时备份与异地恢复', link: '/server-backup' },
           { text: '便利指令与权限计划', link: '/server-command-plan' },
           { text: 'AI 集成：实时进度助手', link: '/ai-integration' },
+          { text: 'MCDR 网页面板：公开查询与 AI 登录', link: '/mcdr-web' },
           { text: 'AI Bridge：部署与连接', link: '/ai-installation' },
           { text: 'AI Bridge：游戏内与 MCP 用法', link: '/ai-commands' }
         ]

@@ -1,7 +1,9 @@
 package io.github.vincentzyu233.cobblemonnote
 
 import com.google.gson.GsonBuilder
+
 import net.fabricmc.loader.api.FabricLoader
+
 import java.nio.file.Files
 
 data class BridgeConfig(

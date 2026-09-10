@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
+
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
@@ -13,6 +14,7 @@ import net.minecraft.commands.Commands
 import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
+
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.URI

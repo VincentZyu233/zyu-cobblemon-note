@@ -26,11 +26,11 @@ Codex、其他兼容 MCP 的 Agent（可经 SSH 转发）
 
 为了避免一次查询造成区块加载或磁盘 I/O，未加载的基地位置只会显示 `unloaded`。让玩家靠近基地后再查即可得到实时内容。
 
-## Fabric、MCP 与 MCDR
+## Fabric、MCP、MCDR 与网页
 
 Fabric 是数据核心，因为 Cobblemon 队伍、电脑、牧场与世界容器都在 Fabric 服务端内存中。MCP 是把这些只读能力提供给 AI 的标准协议，因此不局限于 Codex。
 
-MCDR 仍有价值，但定位是后续的公告、备份、聊天平台桥接和运维自动化。不要让 MCDR 再去解析 Cobblemon 存档或重复读取箱子，这会造成两套数据口径。
+MCDR 负责 NiceGUI 网页面板、公共查询、登录后的 AI 入口和 `Games_AI` 适配。它通过 Fabric Bridge 读取数据，不会解析 Cobblemon 存档或重复读取箱子，因此仍只有一套数据口径。页面部署与运行时配置请看 [MCDR 网页面板](/mcdr-web)。
 
 ## 问答模型
 

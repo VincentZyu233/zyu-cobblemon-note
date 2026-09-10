@@ -1,0 +1,11 @@
+{
+  "id": "zyu_cobblemon_web",
+  "version": "0.1.0",
+  "name": "Zyu Cobblemon Web",
+  "description": "Read-only Cobblemon progress dashboard backed by the Fabric bridge.",
+  "author": "VincentZyu233",
+  "link": "https://github.com/VincentZyu233/zyu-cobblemon-note",
+  "dependencies": {
+    "mcdreforged": ">=2.13.0"
+  }
+}

@@ -10,7 +10,7 @@
 
 :::
 
-将 artifact 中的非 `-sources` Jar 放进服务端 `mods/`，再启动服务端一次，让它生成：
+当前 server artifact 同时包含 `fabric/`、`gateway/`、`mcdr/` 与 `manifest.json`。将 `fabric/` 中的非 `-sources` Jar 放进服务端 `mods/`，再启动服务端一次，让它生成：
 
 ```text
 config/zyu-cobblemon-note.json
@@ -35,6 +35,12 @@ BRIDGE_URL=http://127.0.0.1:25931
 MCP 的 stdio 通道由网关进程提供；本地 AI 客户端需要访问 HTTP bridge 时，可用 SSH 将远程 `25931` 转发到本机。不要将这两个端口配置到 NAT 或防火墙公网规则中。
 
 常驻 systemd 服务应设置 `GATEWAY_MODE=http`，只负责游戏内 `/ai question`。需要 MCP 时，在 SSH 会话中按需以 `GATEWAY_MODE=mcp` 启动同一份网关；该模式不会监听 `25932`，因此不会和常驻问答服务冲突。
+
+## MCDR 网页面板
+
+`mcdr/zyu-cobblemon-web.mcdr` 是由同一个 CI artifact 打包的 NiceGUI 面板插件。MCDR 运行时建议由 `uv` 管理，并在选择好当前设备可用的稳定 Python 后安装 MCDReforged 与插件 requirements。
+
+它会在 `config/zyu_cobblemon_web/config.json` 生成私有配置，填写相同的 `bridge_secret`。页面的公开查询不需要登录；AI 页要求密码哈希和 `Games_AI` Cobblemon 分支。完整功能与边界见 [MCDR 网页面板](/mcdr-web)。
 
 ## 基地登记
 
