@@ -25,7 +25,7 @@ import uvicorn
 CONFIG_NAME = "config.json"
 DEFAULT_CONFIG: dict[str, Any] = {
     "host": "0.0.0.0",
-    "port": 25933,
+    "port": 26697,
     "bridge_url": "http://127.0.0.1:25931",
     "bridge_secret": "",
     "web_session_secret": "",

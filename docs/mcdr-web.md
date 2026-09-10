@@ -37,6 +37,8 @@ config/zyu_cobblemon_web/config.json
 
 在其中填写与 Fabric 模组相同的 `bridge_secret`。`auth.password_hash` 必须是密码哈希，不能明文保存密码或提交到 Git。
 
+网页默认监听 `0.0.0.0:26697`。这是唯一需要配置公网映射的端口；Fabric Bridge `25931` 与网关 `25932` 仍仅监听本机回环地址。
+
 ## AI 接入状态
 
 网页 AI 只在 `Games_AI` 的 Cobblemon 分支提供 `ask_readonly()` 接口后启用。该接口只允许读取 Cobblemon 状态、基地物资、玩家进度与源码；它不能控制 Bot、白名单、技能文件或服务端。
