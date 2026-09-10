@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitepress'
+import { withMermaid } from 'vitepress-plugin-mermaid'
 
-export default defineConfig({
+export default withMermaid(defineConfig({
   base: '/zyu-cobblemon-note/',
   title: 'Cobblemon 1.8 指南',
   description: 'Zyu 的 Cobblemon 1.8 Fabric 整合包个人游玩笔记',
@@ -64,10 +65,7 @@ export default defineConfig({
           { text: '服务器性能监控', link: '/performance' },
           { text: '定时备份与异地恢复', link: '/server-backup' },
           { text: '便利指令与权限计划', link: '/server-command-plan' },
-          { text: 'AI 集成：实时进度助手', link: '/ai-integration' },
-          { text: 'MCDR 网页面板：公开查询与 AI 登录', link: '/mcdr-web' },
-          { text: 'AI Bridge：部署与连接', link: '/ai-installation' },
-          { text: 'AI Bridge：游戏内与 MCP 用法', link: '/ai-commands' }
+          { text: 'AI 集成：实时进度助手', link: '/ai' }
         ]
       },
       {
@@ -106,4 +104,4 @@ export default defineConfig({
     docFooter: { prev: '上一页', next: '下一页' },
     footer: { message: '基于 Cobblemon 1.8.0 官方公开资料整理', copyright: 'Minecraft 与 Pokemon 相关权利归各自权利人所有。' }
   }
-})
+}))

@@ -54,4 +54,4 @@ npm run build
 - `mod/`：Fabric 1.21.1 服务端模组，提供受签名保护的 loopback 数据接口和 `/ai` 命令。
 - `gateway/`：运行在服务端同机的 MCP stdio 服务与 OpenAI 问答网关；密钥仅放在远程未提交的 `gateway/.env`，绝不提交。MCP 客户端可通过 SSH 本地端口转发接入。
 - `mcdr/`：构建为 `.mcdr` 的只读进度网页插件。它通过 Fabric Bridge 查询实时状态和登记容器，不能直接读取存档。
-- [AI 集成说明](docs/ai-integration.md)：数据范围、权限、SSH 隧道和部署步骤。
+- [AI 集成：实时进度助手](docs/ai.md)：数据范围、职责边界、网页、游戏内命令、MCP 与后续部署计划。

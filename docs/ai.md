@@ -15,7 +15,7 @@
 - 现有 Node 网关已支持游戏内 `/ai question` 与 MCP stdio，并仅计划监听 `127.0.0.1:25932`。
 - 远程 Cobblemon 服务端仍位于 `/data/data1/minecraft/cobblemon`，尚未移动到 MCDR 管理目录。
 - `Games_AI` 的 fork 已整理：`main` 对齐上游，`tyy-superflat-test` 保留天翼云超平坦测试服工作。曾创建的 `zyu-cobblemon` 只读实验分支未部署，后续会删除，不进入最终架构。
-- 当前四篇旧文档仍保留，侧栏和 README 尚未切换；本页是后续四合一的目标内容。
+- 原有的实时助手、MCDR 面板、部署连接、游戏内/MCP 用法四篇说明已经与本页规划合并；侧栏只保留本页入口。
 
 ## 最终架构
 
@@ -59,6 +59,53 @@ flowchart TB
 
 :::
 
+## 能读取什么
+
+- TPS、MSPT、在线人数和当前玩家位置、生命、饥饿值。
+- 在线玩家背包汇总、Cobblemon 队伍，以及明确查询时的电脑宝可梦摘要。
+- 手工登记的基地范围、单个箱子、木桶、潜影盒和机器库存。
+
+不会为了查询而加载区块或读取存档。登记位置所在区块未加载时，Bridge 会返回 `unloaded`；网页与 MCP 必须明确显示“结果不完整”，不能把它当作空箱子。
+
+`accessMode` 控制游戏内 `/ai` 读取范围：`public_full` 允许所有人读取、`self_and_admin` 限制普通玩家只读自己的 `player`/`party`、`admin_only` 仅管理员可用。`status` 始终可查看且不含玩家隐私数据。
+
+## 网页面板
+
+MCDR Web 面板在公网 `26697/TCP` 提供只读进度视图：未登录用户可看状态、在线玩家和已加载登记容器，并按 `iron_ingot`、`cobblemon:poke_ball` 等物品 ID 做子串搜索。
+
+网页 AI 不会直接暴露 Node 网关。登录成功后，用户先在当前在线玩家中选择一位作为上下文，再由 MCDR 在本机调用网关。该提问与游戏内问答共享配额，不给物品、不执行命令、不控制 Bot。
+
+::: tip Here 插件
+
+Here 是独立的 MCDR 信息插件，用于显示坐标并高亮玩家。它与网页 AI、Fabric Bridge 没有数据写入关系；最终在 MCDR 控制台使用 `!!MCDR plugin install here` 安装。
+
+:::
+
+## 游戏内命令与 MCP
+
+### 游戏内 `/ai`
+
+```mcfunction
+/ai status
+/ai players
+/ai player 玩家名
+/ai party 玩家名
+/ai base 基地名
+/ai question 我目前有哪些材料能做治疗仪？
+```
+
+前五个命令直接返回 Bridge 数据。`/ai question` 会异步排队，在模型回答后以游戏内系统消息回传；每位玩家默认 60 秒一次、全服单并发、每日 100 次，问题最长 500 字。
+
+### MCP 工具
+
+Node 网关通过 stdio 暴露 MCP，不监听公网 HTTP。兼容 MCP 的 Agent 可通过 SSH 会话运行它，读取：
+
+- `get_server_status`、`list_online_players`。
+- `get_player_progress`、`get_player_party`、`get_player_pc_summary`。
+- `list_bases`、`get_base_inventory`。
+
+服务器未启动、玩家离线、SSH 隧道断开或区块未加载时，工具返回错误或状态，不能使用缓存猜测。
+
 ## 权限与密钥
 
 未登录用户只能查看实时状态、在线玩家和已加载登记容器，并按物品 ID 做子串搜索。网页 AI 必须登录，且必须在在线玩家列表中选中一位作为进度上下文。
@@ -88,7 +135,7 @@ flowchart TB
 2. MCDR Web 移除 `Games_AI` 依赖，保留登录；登录后显示在线玩家选择器和网页 AI 区域。
 3. Node 网关新增仅回环可访问的 `/v1/web-questions`，验证独立 token，复用全服单并发、60 秒冷却、每日 100 次与 500 字限制。
 4. 网关从 `/data/data1/aaa_from_git_aaa/cobblemon` 有界检索源码片段，并将片段、实时服务器状态和所选玩家进度提供给模型。
-5. 将旧的 `ai-integration.md`、`mcdr-web.md`、`ai-installation.md`、`ai-commands.md` 收敛到本页，更新 VitePress 侧栏与 README，删除旧页面和过时的 Games_AI 描述。
+5. 本页已作为唯一 AI 集成入口；后续维护只更新本页，避免再次拆分职责与部署说明。
 
 ### 通过 CI 后：远程部署
 
@@ -105,6 +152,22 @@ encoding: utf8
 
 4. 只安装 Here 和自研 Web 插件。MCDR 前台以 `uv run mcdreforged` 验收，稳定后再由 MCSM 管理常驻。
 5. 从私有凭据文件生成网页密码哈希和 `WEB_AI_TOKEN`；网关 `.env` 使用 `600` 权限。
+
+部署时网关环境文件至少包含：
+
+```dotenv
+OPENAI_API_KEY=...
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_MODEL=...
+BRIDGE_SECRET=与 Fabric sharedSecret 相同
+BRIDGE_URL=http://127.0.0.1:25931
+GATEWAY_HOST=127.0.0.1
+GATEWAY_PORT=25932
+WEB_AI_TOKEN=独立随机字符串
+COBBLEMON_SOURCE_ROOT=/data/data1/aaa_from_git_aaa/cobblemon
+MAX_DAILY_QUESTIONS=100
+QUESTION_COOLDOWN_SECONDS=60
+```
 
 ### 验收清单
 
