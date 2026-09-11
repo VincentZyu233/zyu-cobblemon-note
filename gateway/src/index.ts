@@ -29,6 +29,14 @@ const usage = new Map<string, number>();
 let daily = { day: '', count: 0 };
 let answerInFlight = false;
 
+const SOURCE_GROUNDING_INSTRUCTIONS = [
+  '你是 Zyu 的 Minecraft Cobblemon 助手。用简洁中文回答。',
+  '回答 Cobblemon、整合包、游戏机制、物品、宝可梦或方块行为前，必须优先依据请求中提供的“Cobblemon 源码检索结果”。',
+  '若源码检索结果为空、无关或无法直接证明结论，必须明确说“无法从当前本机 Cobblemon 源码确认”，不得把通用 Minecraft、宝可梦知识或自己的推测表述为该服务器的事实。',
+  '实时服务器数据只用于描述当前服务器状态；源码片段只用于描述实现与机制。需要推断时，明确标注为推断并说明依据。',
+  '不得建议执行作弊、给物品、修改世界或绕过权限的操作。',
+].join('\n');
+
 type BridgeData = Record<string, unknown>;
 type Question = { player: string; question: string };
 type GameQuestion = Question & { requestId: string; playerUuid: string };
@@ -125,9 +133,8 @@ async function answer(question: string, player: string): Promise<string> {
     body: JSON.stringify({
       model,
       max_output_tokens: 450,
+      instructions: SOURCE_GROUNDING_INSTRUCTIONS,
       input: [
-        '你是 Zyu 的 Minecraft Cobblemon 助手。用简洁中文回答。',
-        '只能根据下方实时数据和源码片段断言事实；不存在的数据明确说未知。不得建议执行作弊、给物品或修改世界的操作。',
         `当前服务器：${JSON.stringify(status)}`,
         `提问玩家状态：${JSON.stringify(progress)}`,
         sources ? `有限 Cobblemon 源码检索结果：\n${sources}` : '本次没有匹配的源码片段。',

@@ -332,12 +332,16 @@ async def index() -> None:
                 ui.label("基地物资").classes("text-lg font-bold")
                 query = ui.input(placeholder="搜索物品 ID，例如 iron_ingot").classes("w-80 max-w-full")
             inventory_note = ui.label().classes("zcn-muted text-sm")
-            inventory = ui.table(columns=[
-                {"name": "item", "label": "物品", "field": "item", "align": "left"},
-                {"name": "count", "label": "数量", "field": "count"},
-                {"name": "base", "label": "基地", "field": "base"},
-                {"name": "position", "label": "位置", "field": "position"},
-            ], rows=[]).classes("w-full")
+            inventory = ui.table(
+                columns=[
+                    {"name": "item", "label": "物品", "field": "item", "align": "left"},
+                    {"name": "count", "label": "数量", "field": "count"},
+                    {"name": "base", "label": "基地", "field": "base"},
+                    {"name": "position", "label": "位置", "field": "position"},
+                ],
+                rows=[],
+                pagination={"page": 1, "rowsPerPage": 25},
+            ).props("rows-per-page-options='[]'").classes("w-full")
 
         with ui.card().classes("zcn-card w-full p-4"):
             ui.label("在线玩家").classes("text-lg font-bold")
@@ -366,8 +370,10 @@ async def index() -> None:
         try:
             rows, incomplete = await run.io_bound(state.search_inventory, query.value)
             inventory.rows = rows
+            inventory.pagination = {"page": 1, "rowsPerPage": 25}
             inventory.update()
-            inventory_note.text = "部分登记箱子所在区块未加载，结果不完整。" if incomplete else "所有已加载登记箱子已查询。"
+            completeness = "部分登记箱子所在区块未加载，结果不完整。" if incomplete else "所有已加载登记箱子已查询。"
+            inventory_note.text = f"{completeness} 共匹配 {len(rows)} 行，每页 25 行。"
         except Exception as error:
             inventory_note.text = f"物资读取失败：{error}"
 

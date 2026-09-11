@@ -2,16 +2,16 @@
 
 这是一套给当前 Cobblemon 朋友服准备的只读辅助能力：它让网页、游戏内命令和兼容 MCP 的 AI 在需要时读取真实进度，而不是根据截图猜测。它不会给物品、移动宝可梦、执行 OP 指令、加载区块或修改世界数据。
 
-::: tip 当前状态：`0.2.1` 已实现，待 CI Artifact 部署
+::: tip 当前状态：`0.2.2` 已实现，待 CI Artifact 部署
 
-远程当前运行 `0.2.0`：登录配置已修正，Gateway 已由 systemd 接管且仅监听 `127.0.0.1:25932`。本次 `0.2.1` 修复 Bridge HMAC 对带查询参数请求的路径规范化，避免 `/v1/player?name=...` 被 Fabric 误判为 `unauthorized`；CI Artifact 完成后再选择维护窗口替换。
+远程当前运行 `0.2.1`：登录配置已修正，Gateway 已由 systemd 接管且仅监听 `127.0.0.1:25932`。本次 `0.2.2` 将“优先检索本机 Cobblemon 源码、无源码依据则明确未知”的规则放入模型系统指令，并为基地物资表增加 25 行分页；CI Artifact 完成后再选择维护窗口替换。
 
 :::
 
 ## 当前进度
 
 - Fabric 数据桥与 Node 网关源码已在本仓库，CI 可构建 Fabric Jar、网关部署包和 MCDR Web 插件 Artifact。
-- 自研 MCDR NiceGUI 面板已完成源码和烟雾测试；`0.2.0` 修复中文用户名的 UTF-8 安全比较，并提高深色模式下输入框、表格与次级文字的明度层级；`0.2.1` 修复带查询参数的 Bridge HMAC。网页默认端口为 `26697`。
+- 自研 MCDR NiceGUI 面板已完成源码和烟雾测试；`0.2.0` 修复中文用户名的 UTF-8 安全比较，并提高深色模式下输入框、表格与次级文字的明度层级；`0.2.1` 修复带查询参数的 Bridge HMAC；`0.2.2` 将基地物资固定为 25 行/页。网页默认端口为 `26697`。
 - Node 网关已支持游戏内 `/ai question`、网页登录后的 `/v1/web-questions` 与 MCP stdio，只监听 `127.0.0.1:25932`。
 - Cobblemon 服务端已移动至 `/data/data1/minecraft/mcdr-cobblemon/cobblemon`，由 MCDR 的 `working_directory` 管理。
 - `Games_AI` 的 fork 已整理：`main` 对齐上游，`tyy-superflat-test` 保留天翼云超平坦测试服工作。曾创建的 `zyu-cobblemon` 只读实验分支未部署，后续会删除，不进入最终架构。
@@ -100,7 +100,7 @@ Here 是独立的 MCDR 信息插件，用于显示坐标并高亮玩家。它与
 /ai question 我目前有哪些材料能做治疗仪？
 ```
 
-前五个命令直接返回 Bridge 数据。`/ai question` 会异步排队，在模型回答后以游戏内系统消息回传；每位玩家默认 60 秒一次、全服单并发、每日 100 次，问题最长 500 字。提交成功会显示“已提交问题”；密钥不匹配才会显示 `401 unauthorized`，冷却、单并发或日限会显示 `429 question_rate_limited`，不再把两类错误混为一谈。
+前五个命令直接返回 Bridge 数据。`/ai question` 会异步排队，在模型回答后以游戏内系统消息回传；每位玩家默认 10 秒一次、全服单并发、每日 1000 次，问题最长 500 字。提交成功会显示“已提交问题”；密钥不匹配才会显示 `401 unauthorized`，冷却、单并发或日限会显示 `429 question_rate_limited`，不再把两类错误混为一谈。
 
 ### MCP 工具
 
@@ -139,13 +139,13 @@ Node 网关通过 stdio 暴露 MCP，不监听公网 HTTP。兼容 MCP 的 Agent
 
 1. `Games_AI` 不进入最终架构；其 fork 仅保留 `main` 上游镜像与 `tyy-superflat-test` 历史分支。
 2. MCDR Web 已移除 Games_AI 依赖，登录后只允许从在线玩家中选择一位作为 AI 上下文。
-3. Node 网关已实现仅回环可访问的 `/v1/web-questions`，以独立 token 验证，并与游戏内问答共用单并发、60 秒冷却、每日 100 次与 500 字限制。
-4. 网关会在 `/data/data1/aaa_from_git_aaa/cobblemon` 内有界检索最多 120 个候选源码文件、最多 6 段和 12 KB 片段，再连同实时状态交给模型。
+3. Node 网关已实现仅回环可访问的 `/v1/web-questions`，以独立 token 验证，并与游戏内问答共用单并发、10 秒冷却、每日 1000 次与 500 字限制。
+4. 网关会在 `/data/data1/aaa_from_git_aaa/cobblemon` 内有界检索最多 120 个候选源码文件、最多 6 段和 12 KB 片段，再连同实时状态交给模型。系统指令要求机制类结论优先以这些源码片段为依据；没有命中或证据不足时必须明确说明无法从当前本机 Cobblemon 源码确认，不得以通用知识猜测。
 5. 本页是唯一 AI 集成入口；后续维护只更新本页，避免再次拆分职责与部署说明。
 
 ### 通过 CI 后：远程部署
 
-1. 使用带 `[build-action]` 的提交生成 `0.2.1` Fabric Jar、Node 网关和 MCDR Web Artifact；只部署 Artifact，不复制源码到插件目录。
+1. 使用带 `[build-action]` 的提交生成 `0.2.2` Fabric Jar、Node 网关和 MCDR Web Artifact；只部署 Artifact，不复制源码到插件目录。
 2. 将 `/data/data1/minecraft/cobblemon` 移入 `/data/data1/minecraft/mcdr-cobblemon/cobblemon`。
 3. 在 MCDR 根目录用 Python 3.12 和 uv 初始化运行环境，配置：
 

@@ -1,6 +1,6 @@
 {
   "id": "zyu_cobblemon_web",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "name": "Zyu Cobblemon Web",
   "description": "Read-only Cobblemon progress dashboard backed by the Fabric bridge.",
   "author": "VincentZyu233",

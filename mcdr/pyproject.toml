@@ -1,6 +1,6 @@
 [project]
 name = "zyu-cobblemon-web"
-version = "0.2.1"
+version = "0.2.2"
 description = "MCDReforged web dashboard for Zyu's Cobblemon server"
 requires-python = ">=3.11,<3.14"
 dependencies = [
