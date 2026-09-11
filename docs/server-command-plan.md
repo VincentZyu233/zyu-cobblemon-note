@@ -1,8 +1,8 @@
 # 服务器便利指令与权限收紧计划
 
-::: tip 当前状态：已部署，待玩家实测
+::: tip 当前状态：`0.2.0` 已实现，待 CI Artifact 部署
 
-服务端已完成 CI artifact 部署：自研命令模组已更新至 `0.1.1`，Essential Commands 的 `enable_fly=true` 已写入实际配置，`ops.json` 已备份后清空。MCSM 尚需切换到本页 AI 集成章节给出的 MCDR 工作目录与启动命令；随后再用无 OP 玩家实测命令，不能把当前状态当作已经完全验收。
+已部署版本仍为 `0.1.1`。本次会通过 CI 生成 `0.2.0` Artifact，新增 OP 专用的基地容器范围登记；Essential Commands 的 `enable_fly=true` 已写入实际配置，`ops.json` 已备份后清空。当前有人在线，不能直接替换；MCSM 尚需切换到本页 AI 集成章节给出的 MCDR 工作目录与启动命令，随后再用无 OP 玩家实测命令，不能把当前状态当作已经完全验收。
 
 :::
 
@@ -100,6 +100,42 @@ enable_night=false
 `/goto` 刻意保留原版 `/tp` 的完整语法，而不是只允许“传送自己”。只把你信任、可以使用目标选择器与坐标传送的玩家写进 `gotoAllowedPlayers`；一般玩家使用 `/tpa`、`/home`、`/back` 即可。
 
 :::
+
+## 自研 Kotlin：基地容器范围登记
+
+网页、MCP 与 `/ai base` 只能读取已登记的基地容器。`0.2.0` 新增两种并行登记方式：直接维护私有 JSON，或由临时 OP 在游戏内用两点选区登记。后者默认用金锄头，方便在不手算坐标的情况下圈出一块基地。
+
+::: warning 仅临时 OP 可操作
+
+选区和 `/zcn base` 全部要求 OP。需要登记时在 MCSM 控制台执行 `/op <用户名>`，完成后立即 `/deop <用户名>`。普通玩家手持金锄头仍按原版行为执行，不会触发选区。
+
+:::
+
+### 游戏内两点选区流程
+
+1. 执行 `/zcn base create <名称>` 创建并选中一个基地；已有基地则执行 `/zcn base select <名称>`。
+2. 主手持默认的金锄头，左键目标方块设置第一角，右键目标方块设置第二角。
+3. 执行 `/zcn base status` 核对基地名、两角和体积。
+4. 确认后执行 `/zcn base add` 才会保存为扫描范围；`/zcn base clear` 只清除尚未保存的两个角。
+
+两次点击会刻意拦截破坏、开箱、耕地等原版交互，因此务必在确认目标方块后点击。两角必须在同一维度；默认最大体积由 `maxRegionBlocks=32768` 限制。`add` 后会立即原子写入配置，并清空本次选点，可以继续圈下一块区域。
+
+默认工具在私有配置 `zyu-cobblemon-note.json` 中是：
+
+```json
+{
+  "regionWandItem": "minecraft:golden_hoe",
+  "maxRegionBlocks": 32768
+}
+```
+
+可把 `regionWandItem` 改成任意有效物品 ID，例如 `minecraft:wooden_hoe`。配置会在服务端启动时读取，因此停服修改后再启动；不要在运行中修改 JSON 后立刻操作命令。
+
+### 手改 JSON 仍然可用
+
+原来的 `bases`、`regions` 与单个 `targets` 配置没有被替代，适合精确输入坐标或批量维护。它与金锄头选区可以并行使用，但有一个重要边界：模组不热重载运行中的外部 JSON 修改，且 `/zcn base create`、`/zcn base add` 会将当前内存配置写回文件。
+
+因此手改 JSON 时应完全停服，修改、检查 JSON 格式后再启动。已登记范围中未加载的区块仍会返回 `unloaded`，查询端必须把它理解为“结果不完整”，而不是空库存。
 
 ## 去除 OP 的实施方式
 

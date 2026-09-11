@@ -225,7 +225,7 @@ async function handleHttp(request: IncomingMessage, response: ServerResponse): P
   }
 }
 
-const mcp = new McpServer({ name: 'zyu-cobblemon-note', version: '0.1.1' });
+const mcp = new McpServer({ name: 'zyu-cobblemon-note', version: '0.2.0' });
 const tools: Array<[string, string, Record<string, z.ZodType>, (args: Record<string, string>) => Promise<unknown>]> = [
   ['get_server_status', '读取当前 TPS、MSPT 与在线人数。', {}, () => bridge('/v1/status')],
   ['list_online_players', '读取在线玩家的位置与基础状态。', {}, () => bridge('/v1/players')],

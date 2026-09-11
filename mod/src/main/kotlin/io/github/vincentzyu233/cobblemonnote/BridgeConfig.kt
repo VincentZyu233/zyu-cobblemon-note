@@ -4,7 +4,9 @@ import com.google.gson.GsonBuilder
 
 import net.fabricmc.loader.api.FabricLoader
 
+import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 data class BridgeConfig(
     var bindHost: String = "127.0.0.1",
@@ -14,6 +16,7 @@ data class BridgeConfig(
     var accessMode: String = "public_full",
     var gotoAllowedPlayers: MutableList<String> = mutableListOf(),
     var suicideEnabled: Boolean = true,
+    var regionWandItem: String = "minecraft:golden_hoe",
     var maxRegionBlocks: Int = 32768,
     var bases: MutableList<BaseDefinition> = mutableListOf()
 ) {
@@ -21,14 +24,27 @@ data class BridgeConfig(
 
     companion object {
         private val gson = GsonBuilder().setPrettyPrinting().create()
+        private fun path() = FabricLoader.getInstance().configDir.resolve("zyu-cobblemon-note.json")
+
         fun load(): BridgeConfig {
-            val path = FabricLoader.getInstance().configDir.resolve("zyu-cobblemon-note.json")
-            if (Files.notExists(path)) {
+            val configPath = path()
+            if (Files.notExists(configPath)) {
                 val config = BridgeConfig()
-                Files.writeString(path, gson.toJson(config))
+                Files.writeString(configPath, gson.toJson(config))
                 return config
             }
-            return gson.fromJson(Files.readString(path), BridgeConfig::class.java) ?: BridgeConfig()
+            return gson.fromJson(Files.readString(configPath), BridgeConfig::class.java) ?: BridgeConfig()
+        }
+
+        fun save(config: BridgeConfig) {
+            val configPath = path()
+            val temporaryPath = configPath.resolveSibling("${configPath.fileName}.tmp")
+            Files.writeString(temporaryPath, gson.toJson(config))
+            try {
+                Files.move(temporaryPath, configPath, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+            } catch (_: AtomicMoveNotSupportedException) {
+                Files.move(temporaryPath, configPath, StandardCopyOption.REPLACE_EXISTING)
+            }
         }
     }
 }

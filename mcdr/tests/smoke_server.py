@@ -33,6 +33,9 @@ def available_port() -> int:
 
 
 def main() -> None:
+    assert plugin.text_matches("VincentZyu", "VincentZyu")
+    assert plugin.text_matches("可爱捏", "可爱捏")
+    assert not plugin.text_matches("可爱捏", "可爱")
     with tempfile.TemporaryDirectory() as temp:
         folder = Path(temp)
         port = available_port()

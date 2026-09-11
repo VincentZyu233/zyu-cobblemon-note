@@ -52,6 +52,10 @@ def password_matches(password: str, stored: str) -> bool:
         return False
 
 
+def text_matches(actual: str, expected: str) -> bool:
+    return hmac.compare_digest(actual.encode("utf-8"), expected.encode("utf-8"))
+
+
 def merge_defaults(value: dict[str, Any], defaults: dict[str, Any]) -> dict[str, Any]:
     result = dict(defaults)
     for key, item in value.items():
@@ -192,51 +196,55 @@ THEME_CSS = """
     --zcn-accent: #f2c94c;
 }
 :root[data-zcn-theme="light"] {
-    --zcn-bg: #f4f1ef;
+    --zcn-bg: #f3f4f6;
     --zcn-surface: #ffffff;
-    --zcn-surface-muted: #f8f6f5;
-    --zcn-ink: #201f20;
-    --zcn-muted: #6c6666;
-    --zcn-border: #d8d1d0;
+    --zcn-surface-muted: #f8f9fa;
+    --zcn-control: #eef1f3;
+    --zcn-ink: #22262a;
+    --zcn-muted: #5f6872;
+    --zcn-border: #c7cfd6;
     --zcn-header: var(--zcn-red);
     --zcn-header-ink: #ffffff;
-    --zcn-shadow: 0 2px 10px rgb(53 23 23 / 8%);
+    --zcn-shadow: 0 2px 10px rgb(44 51 59 / 10%);
 }
 :root[data-zcn-theme="dark"] {
-    --zcn-bg: #101010;
-    --zcn-surface: #1a1919;
-    --zcn-surface-muted: #242121;
-    --zcn-ink: #faf5f4;
-    --zcn-muted: #c6bdbc;
-    --zcn-border: #4b4141;
-    --zcn-header: #171515;
+    --zcn-bg: #101315;
+    --zcn-surface: #1b1f23;
+    --zcn-surface-muted: #252a2f;
+    --zcn-control: #30363d;
+    --zcn-ink: #f8f3f1;
+    --zcn-muted: #c5cbd1;
+    --zcn-border: #606a74;
+    --zcn-header: #171a1d;
     --zcn-header-ink: #ffffff;
-    --zcn-shadow: 0 2px 12px rgb(0 0 0 / 32%);
+    --zcn-shadow: 0 2px 12px rgb(0 0 0 / 38%);
 }
 @media (prefers-color-scheme: light) {
     :root[data-zcn-theme="system"] {
-        --zcn-bg: #f4f1ef;
+        --zcn-bg: #f3f4f6;
         --zcn-surface: #ffffff;
-        --zcn-surface-muted: #f8f6f5;
-        --zcn-ink: #201f20;
-        --zcn-muted: #6c6666;
-        --zcn-border: #d8d1d0;
+        --zcn-surface-muted: #f8f9fa;
+        --zcn-control: #eef1f3;
+        --zcn-ink: #22262a;
+        --zcn-muted: #5f6872;
+        --zcn-border: #c7cfd6;
         --zcn-header: var(--zcn-red);
         --zcn-header-ink: #ffffff;
-        --zcn-shadow: 0 2px 10px rgb(53 23 23 / 8%);
+        --zcn-shadow: 0 2px 10px rgb(44 51 59 / 10%);
     }
 }
 @media (prefers-color-scheme: dark) {
     :root[data-zcn-theme="system"] {
-        --zcn-bg: #101010;
-        --zcn-surface: #1a1919;
-        --zcn-surface-muted: #242121;
-        --zcn-ink: #faf5f4;
-        --zcn-muted: #c6bdbc;
-        --zcn-border: #4b4141;
-        --zcn-header: #171515;
+        --zcn-bg: #101315;
+        --zcn-surface: #1b1f23;
+        --zcn-surface-muted: #252a2f;
+        --zcn-control: #30363d;
+        --zcn-ink: #f8f3f1;
+        --zcn-muted: #c5cbd1;
+        --zcn-border: #606a74;
+        --zcn-header: #171a1d;
         --zcn-header-ink: #ffffff;
-        --zcn-shadow: 0 2px 12px rgb(0 0 0 / 32%);
+        --zcn-shadow: 0 2px 12px rgb(0 0 0 / 38%);
     }
 }
 body, .q-page, .nicegui-content { background: var(--zcn-bg); color: var(--zcn-ink); }
@@ -249,9 +257,16 @@ body, .q-page, .nicegui-content { background: var(--zcn-bg); color: var(--zcn-in
 .zcn-theme-button { min-width: 34px; min-height: 32px; color: var(--zcn-header-ink); border-radius: 0; }
 .zcn-theme-button.zcn-theme-selected { background: var(--zcn-header-ink); color: var(--zcn-red-strong); }
 .zcn-theme-button.zcn-theme-unselected { background: transparent; }
-.zcn-card .q-field__control, .zcn-card .q-table__container { background: var(--zcn-surface); color: var(--zcn-ink); }
+.zcn-card .q-field__control { background: var(--zcn-control); color: var(--zcn-ink); }
+.zcn-card .q-table__container { background: var(--zcn-surface); color: var(--zcn-ink); }
 .zcn-card .q-field--outlined .q-field__control:before, .zcn-card .q-table__container { border-color: var(--zcn-border); }
+.zcn-card .q-field--outlined.q-field--focused .q-field__control:after { border-color: #eb7778; }
 .zcn-card .q-field__native, .zcn-card .q-field__label, .zcn-card .q-table, .zcn-card .q-table th, .zcn-card .q-table td { color: var(--zcn-ink); }
+.zcn-card .q-field__native::placeholder { color: var(--zcn-muted); opacity: 1; }
+.zcn-card .q-table thead tr { background: var(--zcn-control); }
+.zcn-card .q-table th { border-bottom: 1px solid var(--zcn-border); font-weight: 700; }
+.zcn-card .q-table td { border-color: color-mix(in srgb, var(--zcn-border) 72%, transparent); }
+.zcn-card .q-btn--outline { border-color: color-mix(in srgb, var(--zcn-header-ink) 72%, var(--zcn-border)); }
 .zcn-card .q-table tbody tr:nth-child(even) { background: var(--zcn-surface-muted); }
 </style>
 """
@@ -407,7 +422,7 @@ def login() -> None:
             auth = state.config["auth"]
             if not auth.get("password_hash"):
                 error.text = "服务端尚未配置密码哈希。"
-            elif hmac.compare_digest(username.value, str(auth["username"])) and password_matches(password.value, str(auth["password_hash"])):
+            elif text_matches(str(username.value), str(auth["username"])) and password_matches(str(password.value), str(auth["password_hash"])):
                 app.storage.user["authenticated"] = True
                 ui.navigate.to("/")
             else:

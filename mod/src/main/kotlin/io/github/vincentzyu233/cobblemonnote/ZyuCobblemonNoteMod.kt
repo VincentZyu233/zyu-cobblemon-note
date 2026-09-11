@@ -9,11 +9,15 @@ import com.sun.net.httpserver.HttpServer
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
+import net.fabricmc.fabric.api.event.player.AttackBlockCallback
+import net.fabricmc.fabric.api.event.player.UseBlockCallback
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands
 import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.InteractionResult
 
 import java.net.InetAddress
 import java.net.InetSocketAddress
@@ -28,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 class ZyuCobblemonNoteMod : ModInitializer {
     private lateinit var config: BridgeConfig
+    private lateinit var baseSelections: BaseSelectionService
     private lateinit var server: MinecraftServer
     private lateinit var snapshots: SnapshotService
     private var http: HttpServer? = null
@@ -37,11 +42,26 @@ class ZyuCobblemonNoteMod : ModInitializer {
     override fun onInitialize() {
         ServerLifecycleEvents.SERVER_STARTED.register { started -> start(started) }
         ServerLifecycleEvents.SERVER_STOPPING.register { http?.stop(0) }
+        ServerPlayConnectionEvents.DISCONNECT.register { handler, _ ->
+            if (this::baseSelections.isInitialized) baseSelections.remove(handler.player)
+        }
+        AttackBlockCallback.EVENT.register { player, world, hand, position, _ ->
+            val serverPlayer = player as? ServerPlayer ?: return@register InteractionResult.PASS
+            if (!this::baseSelections.isInitialized || !serverPlayer.hasPermissions(2) || !baseSelections.isWand(serverPlayer.getItemInHand(hand))) return@register InteractionResult.PASS
+            baseSelections.setFirst(serverPlayer, world.dimension().location().toString(), position)
+            InteractionResult.FAIL
+        }
+        UseBlockCallback.EVENT.register { player, world, hand, hitResult ->
+            val serverPlayer = player as? ServerPlayer ?: return@register InteractionResult.PASS
+            if (!this::baseSelections.isInitialized || !serverPlayer.hasPermissions(2) || !baseSelections.isWand(serverPlayer.getItemInHand(hand))) return@register InteractionResult.PASS
+            baseSelections.setSecond(serverPlayer, world.dimension().location().toString(), hitResult.blockPos)
+            InteractionResult.FAIL
+        }
         CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> registerCommands(dispatcher) }
     }
 
     private fun start(started: MinecraftServer) {
-        server = started; config = BridgeConfig.load(); snapshots = SnapshotService(server, config)
+        server = started; config = BridgeConfig.load(); baseSelections = BaseSelectionService(config); snapshots = SnapshotService(server, config)
         if (!config.hasSecret()) { LOGGER.warn("AI bridge disabled: set sharedSecret in config/zyu-cobblemon-note.json"); return }
         http = HttpServer.create(InetSocketAddress(InetAddress.getByName(config.bindHost), config.port), 0).apply { createContext("/v1") { handle(it) }; executor = java.util.concurrent.Executors.newCachedThreadPool(); start() }
         LOGGER.info("AI bridge listening on {}:{}", config.bindHost, config.port)
@@ -83,6 +103,16 @@ class ZyuCobblemonNoteMod : ModInitializer {
     private fun errorResponse(message: String) = JsonObject().apply { addProperty("error", message) }
 
     private fun registerCommands(dispatcher: com.mojang.brigadier.CommandDispatcher<CommandSourceStack>) {
+        dispatcher.register(
+            Commands.literal("zcn")
+                .requires(::canManageBases)
+                .then(Commands.literal("base")
+                    .then(Commands.literal("create").then(Commands.argument("name", StringArgumentType.greedyString()).executes { context -> baseAction(context.source) { baseSelections.create(it, StringArgumentType.getString(context, "name")) } }))
+                    .then(Commands.literal("select").then(Commands.argument("name", StringArgumentType.greedyString()).executes { context -> baseAction(context.source) { baseSelections.select(it, StringArgumentType.getString(context, "name")) } }))
+                    .then(Commands.literal("status").executes { context -> baseAction(context.source) { baseSelections.status(it) } })
+                    .then(Commands.literal("add").executes { context -> baseAction(context.source) { baseSelections.add(it) } })
+                    .then(Commands.literal("clear").executes { context -> baseAction(context.source) { baseSelections.clear(it) } }))
+        )
         val teleport = dispatcher.root.getChild("teleport") ?: dispatcher.root.getChild("tp")
         if (teleport == null) {
             LOGGER.warn("Vanilla teleport command was not registered; /goto is unavailable")
@@ -138,6 +168,11 @@ class ZyuCobblemonNoteMod : ModInitializer {
         val player = source.entity as? ServerPlayer ?: return false
         return config.gotoAllowedPlayers.any { it.equals(player.gameProfile.name, ignoreCase = true) }
     }
+    private fun canManageBases(source: CommandSourceStack): Boolean = source.hasPermission(2) && source.entity is ServerPlayer
+    private fun baseAction(source: CommandSourceStack, action: (ServerPlayer) -> String): Int = runCatching { action(source.playerOrException) }.fold(
+        { message -> source.sendSuccess({ Component.literal("[基地] $message") }, false); 1 },
+        { error -> source.sendFailure(Component.literal("[基地] ${error.message ?: "操作失败"}")); 0 },
+    )
     private fun canQuestion(source: CommandSourceStack): Boolean = config.accessMode.lowercase() != "admin_only" || source.hasPermission(2)
     private fun deny(source: CommandSourceStack): Int { source.sendFailure(Component.literal("[AI] 当前 accessMode 不允许此查询。")); return 0 }
     private fun ask(player: ServerPlayer, question: String) {
