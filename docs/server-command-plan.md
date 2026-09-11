@@ -59,16 +59,46 @@ enable_night=false
 
 :::
 
-## `/suicide` 的处理
+## 自研 Kotlin 命令：`/suicide` 与 `/goto`
 
-当前没有找到可验证的 Fabric 1.21.1 现成 `/suicide` 模组构建：部分项目页面标注支持 1.21.1，但实际发布列表没有对应 Fabric Jar，不能直接安装。
+当前没有找到可验证的 Fabric 1.21.1 现成 `/suicide` 模组构建：部分项目页面标注支持 1.21.1，但实际发布列表没有对应 Fabric Jar，不能直接安装。因此这两个指令来自同一个自研的纯服务端 Fabric Kotlin 模组：`Zyu Cobblemon Note`（模组 ID：`zyu_cobblemon_note`），不是 Essential Commands 提供的功能。
 
-后续采用同仓库的极小纯服务端 Fabric 模组，提供两个明确边界的便利命令：
+源码入口为 [`ZyuCobblemonNoteMod.kt`](https://github.com/VincentZyu233/zyu-cobblemon-note/blob/main/mod/src/main/kotlin/io/github/vincentzyu233/cobblemonnote/ZyuCobblemonNoteMod.kt)。它仅安装在服务端，客户端无需新增模组。
 
-- `/suicide`：仅让执行者自身死亡，不接收玩家目标参数，也不授予 `/kill`、`/give`、`/gamemode` 等权限。
-- `/goto`：受控地复用原版 `/teleport` 命令树，因此坐标、实体目标、旋转和 `facing` 等原版语法都有效。它并不默认向所有普通玩家开放：仅配置文件 `gotoAllowedPlayers` 白名单中的名字可用，临时 OP 也可用。清空 OP 前必须先把可信玩家填入该数组；这避免任何路人使用 `@a` 等选择器传送整服玩家。
+| 指令 | 做什么 | 谁能用 | 不会获得什么 |
+| --- | --- | --- | --- |
+| `/suicide` | 仅让执行者自身死亡，等效于一次自杀回出生点/重生点。 | 所有实际在线玩家；可通过 `suicideEnabled` 关闭。 | 不能指定其他玩家，不会取得 `/kill`、`/give`、`/gamemode` 权限。 |
+| `/goto` | 将指令转交给原版 `/teleport` 命令树。 | `gotoAllowedPlayers` 白名单中的名字，或临时 OP。 | 白名单只对这条命令生效，不会变成 OP。 |
+
+### `/suicide`：只作用于自己
+
+直接输入即可：
+
+```mcfunction
+/suicide
+```
+
+源码会取得执行者自身并调用死亡逻辑，不接受目标参数。因此 `/suicide rainyxin` 不是有效写法，也不能被用来击杀别人。
+
+### `/goto`：原版传送语法的受控入口
+
+`/goto` 复用原版 `/tp` 的解析与传送行为，所以可以使用常见的原版形式：
+
+```mcfunction
+/goto 120 64 -320
+/goto rainyxin
+/goto @s 120 64 -320 facing entity VincentZyu eyes
+```
+
+它并不默认向所有普通玩家开放：仅配置文件 `gotoAllowedPlayers` 白名单中的名字可用，临时 OP 也可用。清空 OP 前必须先把可信玩家填入该数组；这避免任何路人使用 `@a` 等选择器传送整服玩家。
 
 `/goto` 在执行时只为这一条命令构造原版所需的权限上下文，不会赋予执行者 `/give`、`/gamemode`、`/kill` 或其他 OP 命令权限。默认配置中的白名单为空，表示停服部署后需要显式填写，不会意外开放传送。
+
+::: warning 白名单意味着完整原版传送能力
+
+`/goto` 刻意保留原版 `/tp` 的完整语法，而不是只允许“传送自己”。只把你信任、可以使用目标选择器与坐标传送的玩家写进 `gotoAllowedPlayers`；一般玩家使用 `/tpa`、`/home`、`/back` 即可。
+
+:::
 
 ## 去除 OP 的实施方式
 
