@@ -2,16 +2,16 @@
 
 这是一套给当前 Cobblemon 朋友服准备的只读辅助能力：它让网页、游戏内命令和兼容 MCP 的 AI 在需要时读取真实进度，而不是根据截图猜测。它不会给物品、移动宝可梦、执行 OP 指令、加载区块或修改世界数据。
 
-::: tip 当前状态：`0.1.1` 修复待 CI 部署
+::: tip 当前状态：`0.1.1` 已部署，待开服实测
 
-此前服务端已完成 CI artifact 部署、目录迁移、MCDR 初始化、私有密钥配置和一次前台验收。现已报告游戏内 `/ai question` 出现 `unauthorized`：`0.1.1` 会区分真实 HMAC 鉴权失败与问答限流，并把结果回显给提问者；待 CI artifact 部署时还需无泄漏地核对 Fabric `sharedSecret` 与网关 `BRIDGE_SECRET` 一致。
+CI artifact 已部署：Fabric 数据桥、Node Gateway 与 MCDR Web 插件均为 `0.1.1`。Gateway 已由 systemd 接管且仅监听 `127.0.0.1:25932`，同时已无泄漏核对 Fabric `sharedSecret` 与 Gateway `BRIDGE_SECRET` 一致。服务端当前按维护要求保持暂停；下次开服后，需由实际玩家验证游戏内 `/ai question` 的正常回答、冷却提示与回传消息。
 
 :::
 
 ## 当前进度
 
 - Fabric 数据桥与 Node 网关源码已在本仓库，CI 可构建 Fabric Jar、网关部署包和 MCDR Web 插件 Artifact。
-- 自研 MCDR NiceGUI 面板已完成源码和烟雾测试；网页默认端口已调整为 `26697`，但远程 MCDR 尚未部署。
+- 自研 MCDR NiceGUI 面板已完成源码和烟雾测试，`0.1.1` 插件已部署；网页默认端口为 `26697`。MCDR 进程目前随维护停服，开服后再验证公网面板。
 - Node 网关已支持游戏内 `/ai question`、网页登录后的 `/v1/web-questions` 与 MCP stdio，只监听 `127.0.0.1:25932`。
 - Cobblemon 服务端已移动至 `/data/data1/minecraft/mcdr-cobblemon/cobblemon`，由 MCDR 的 `working_directory` 管理。
 - `Games_AI` 的 fork 已整理：`main` 对齐上游，`tyy-superflat-test` 保留天翼云超平坦测试服工作。曾创建的 `zyu-cobblemon` 只读实验分支未部署，后续会删除，不进入最终架构。

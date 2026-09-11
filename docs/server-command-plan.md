@@ -2,7 +2,7 @@
 
 ::: tip 当前状态：已部署，待玩家实测
 
-服务端已完成 CI artifact 部署和一次 MCDR 前台加载：自研命令模组与 Essential Commands 均已加载，Essential 配置已按本页目标收紧，`ops.json` 已备份后清空。MCSM 尚需切换到本页 AI 集成章节给出的 MCDR 工作目录与启动命令；随后再用无 OP 玩家实测命令，不能把当前状态当作已经完全验收。
+服务端已完成 CI artifact 部署：自研命令模组已更新至 `0.1.1`，Essential Commands 的 `enable_fly=true` 已写入实际配置，`ops.json` 已备份后清空。MCSM 尚需切换到本页 AI 集成章节给出的 MCDR 工作目录与启动命令；随后再用无 OP 玩家实测命令，不能把当前状态当作已经完全验收。
 
 :::
 
