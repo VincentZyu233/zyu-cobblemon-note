@@ -9,9 +9,9 @@
 ## 目标
 
 - 移除所有玩家的 OP 身份，关闭原版管理指令带来的创造、给物品、改游戏规则等权限。
-- 仍向普通玩家开放常用的多人便利指令：`/tpa`、`/tpahere`、`/tpaccept`、`/tpdeny`、`/home`、`/back` 和 `/suicide`；可信玩家可使用完整原版语法的 `/goto`。
+- 仍向普通玩家开放常用的多人便利指令：`/tpa`、`/tpahere`、`/tpaccept`、`/tpdeny`、`/home`、`/back`、`/fly` 和 `/suicide`；可信玩家可使用完整原版语法的 `/goto`。
 - 每位玩家最多设置一个家。
-- 不开放 `/fly`、`/invuln`、`/top`、`/day`、`/night`、全服传送点或其他会改变生存平衡的指令。
+- 不开放 `/invuln`、`/top`、`/day`、`/night`、全服传送点或其他会改变生存平衡的指令。
 
 ## 已核实的候选模组
 
@@ -33,6 +33,7 @@
 - `/tpa <玩家>`、`/tpahere <玩家>`、`/tpaccept <玩家>`、`/tpdeny <玩家>`
 - `/home set <名字>`、`/home tp <名字>`、`/home delete <名字>`、`/home list`
 - `/back`
+- `/fly`：切换自身飞行；由 Essential Commands 配置启用。
 
 计划配置：
 
@@ -44,7 +45,7 @@ enable_tpa=true
 enable_back=true
 enable_home=true
 enable_warp=false
-enable_fly=false
+enable_fly=true
 enable_invuln=false
 enable_top=false
 enable_day=false
@@ -67,7 +68,7 @@ enable_night=false
 
 | 指令 | 做什么 | 谁能用 | 不会获得什么 |
 | --- | --- | --- | --- |
-| `/suicide` | 仅让执行者自身死亡，等效于一次自杀回出生点/重生点。 | 所有实际在线玩家；可通过 `suicideEnabled` 关闭。 | 不能指定其他玩家，不会取得 `/kill`、`/give`、`/gamemode` 权限。 |
+| `/suicide` | 在左下角显示 `ouch.... that looks hurt` 后，仅让执行者自身死亡。 | 所有实际在线玩家；可通过 `suicideEnabled` 关闭。 | 不能指定其他玩家，不会取得 `/kill`、`/give`、`/gamemode` 权限。 |
 | `/goto` | 将指令转交给原版 `/teleport` 命令树。 | `gotoAllowedPlayers` 白名单中的名字，或临时 OP。 | 白名单只对这条命令生效，不会变成 OP。 |
 
 ### `/suicide`：只作用于自己
@@ -118,7 +119,7 @@ enable_night=false
 2. 已完成：安装 Essential Commands `0.35.2-mc1.21`，通过首次启动生成真实配置，再关闭不在范围内的便利/生存破坏指令。
 3. 已完成：加入自研 `/suicide` 与受白名单保护的 `/goto`；私有配置暂时允许 `rainyxin` 和 `VincentZyu` 使用 `/goto`，后续新增可信玩家时只改该数组。
 4. 已完成：清空 `ops.json`。
-5. 待完成：在 MCSM 改为 MCDR 启动后，用无 OP 账号逐项验证 TPA 请求、拒绝、唯一 Home、Back、Suicide 与 Goto；同时确认 `/gamemode`、`/give`、`/kill <其他玩家>` 均不可用，并确认不在 `gotoAllowedPlayers` 的账号无法使用 `/goto`。
+5. 待完成：在 MCSM 改为 MCDR 启动后，用无 OP 账号逐项验证 TPA 请求、拒绝、唯一 Home、Back、Fly、Suicide 与 Goto；同时确认 `/gamemode`、`/give`、`/kill <其他玩家>` 均不可用，并确认不在 `gotoAllowedPlayers` 的账号无法使用 `/goto`。
 
 ::: danger 不在服务器运行时编辑权限文件
 

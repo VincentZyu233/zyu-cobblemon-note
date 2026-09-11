@@ -99,6 +99,7 @@ class ZyuCobblemonNoteMod : ModInitializer {
                 .requires { config.suicideEnabled && it.entity is ServerPlayer }
                 .executes { context ->
                     val player = context.source.playerOrException
+                    context.source.sendSuccess({ Component.literal("ouch.... that looks hurt") }, false)
                     player.kill()
                     1
                 }
@@ -144,7 +145,18 @@ class ZyuCobblemonNoteMod : ModInitializer {
         val body = JsonObject().apply { addProperty("requestId", id); addProperty("player", player.gameProfile.name); addProperty("playerUuid", player.uuid.toString()); addProperty("question", question) }.toString()
         val now = Instant.now().epochSecond.toString(); val nonce = UUID.randomUUID().toString(); val uri = URI.create(config.gatewayQuestionUrl)
         val request = HttpRequest.newBuilder(uri).header("Content-Type", "application/json").header("X-ZCN-Timestamp", now).header("X-ZCN-Nonce", nonce).header("X-ZCN-Signature", BridgeSecurity.sign(config.sharedSecret, now, nonce, "POST", uri.path, body)).POST(HttpRequest.BodyPublishers.ofString(body)).build()
-        HttpClient.newHttpClient().sendAsync(request, HttpResponse.BodyHandlers.discarding()); player.sendSystemMessage(Component.literal("[AI] 已提交问题，回答会通过私聊返回。"))
+        HttpClient.newHttpClient().sendAsync(request, HttpResponse.BodyHandlers.ofString()).whenComplete { response, failure ->
+            server.execute {
+                when {
+                    failure != null -> player.sendSystemMessage(Component.literal("[AI] 提交失败：${failure.message ?: "无法连接 AI 网关"}"))
+                    response.statusCode() == 202 -> player.sendSystemMessage(Component.literal("[AI] 已提交问题，回答会通过系统消息返回。"))
+                    else -> {
+                        pending.remove(id)
+                        player.sendSystemMessage(Component.literal("[AI] 提交失败（${response.statusCode()}）：${response.body().take(200)}"))
+                    }
+                }
+            }
+        }
     }
     private fun acceptAnswer(requestId: String, answer: String) { pending.remove(requestId)?.let { uuid -> server.playerList.getPlayer(uuid)?.sendSystemMessage(Component.literal("[AI] ${answer.take(2_000)}")) } }
     companion object { private val LOGGER = org.slf4j.LoggerFactory.getLogger("zyu-cobblemon-note") }

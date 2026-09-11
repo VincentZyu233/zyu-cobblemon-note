@@ -2,6 +2,10 @@ import { defineConfig } from 'vitepress'
 import { withMermaid } from 'vitepress-plugin-mermaid'
 
 const base = '/zyu-cobblemon-note/'
+const apricornPage = 'https://wiki.cobblemon.com/index.php/Apricorn'
+const pokeballIcon = {
+  svg: `<svg viewBox="0 0 512 512" aria-hidden="true"><image href="${base}assets/icon.png" width="512" height="512" /></svg>`
+}
 
 export default withMermaid(defineConfig({
   base,
@@ -99,6 +103,7 @@ export default withMermaid(defineConfig({
       }
     ],
     socialLinks: [
+      { icon: pokeballIcon, link: apricornPage, ariaLabel: 'Cobblemon 球果与精灵球资料' },
       { icon: 'github', link: 'https://github.com/VincentZyu233/zyu-cobblemon-note' },
       { icon: 'gitlab', link: 'https://gitlab.com/cable-mc/cobblemon' }
     ],

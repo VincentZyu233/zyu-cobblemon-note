@@ -198,9 +198,11 @@ async function handleHttp(request: IncomingMessage, response: ServerResponse): P
   }
 
   if (request.url === '/v1/questions') {
-    if (!hasValidBridgeSignature(request, body) || !validQuestion(value)) return reply(response, 401);
+    if (!hasValidBridgeSignature(request, body)) return reply(response, 401, { error: 'unauthorized' });
+    if (!validQuestion(value)) return reply(response, 400, { error: 'invalid_question' });
     const gameQuestion = value as Partial<GameQuestion>;
-    if (typeof gameQuestion.requestId !== 'string' || typeof gameQuestion.playerUuid !== 'string' || !allowed(gameQuestion.playerUuid)) return reply(response, 401);
+    if (typeof gameQuestion.requestId !== 'string' || typeof gameQuestion.playerUuid !== 'string') return reply(response, 400, { error: 'invalid_game_question' });
+    if (!allowed(gameQuestion.playerUuid)) return reply(response, 429, { error: 'question_rate_limited' });
     const verifiedQuestion = gameQuestion as GameQuestion;
     reply(response, 202);
     answerInFlight = true;
@@ -223,7 +225,7 @@ async function handleHttp(request: IncomingMessage, response: ServerResponse): P
   }
 }
 
-const mcp = new McpServer({ name: 'zyu-cobblemon-note', version: '0.1.0' });
+const mcp = new McpServer({ name: 'zyu-cobblemon-note', version: '0.1.1' });
 const tools: Array<[string, string, Record<string, z.ZodType>, (args: Record<string, string>) => Promise<unknown>]> = [
   ['get_server_status', '读取当前 TPS、MSPT 与在线人数。', {}, () => bridge('/v1/status')],
   ['list_online_players', '读取在线玩家的位置与基础状态。', {}, () => bridge('/v1/players')],
