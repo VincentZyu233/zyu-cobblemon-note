@@ -68,6 +68,10 @@ def signature(secret: str, timestamp: str, nonce: str, method: str, path: str) -
     return hmac.new(secret.encode("utf-8"), message, hashlib.sha256).hexdigest()
 
 
+def signature_path(path: str) -> str:
+    return urllib.parse.urlsplit(path).path or "/"
+
+
 class BridgeClient:
     def __init__(self, base_url: str, secret: str):
         self.base_url = base_url.rstrip("/")
@@ -82,7 +86,7 @@ class BridgeClient:
             headers={
                 "X-ZCN-Timestamp": timestamp,
                 "X-ZCN-Nonce": nonce,
-                "X-ZCN-Signature": signature(self.secret, timestamp, nonce, "GET", path),
+                "X-ZCN-Signature": signature(self.secret, timestamp, nonce, "GET", signature_path(path)),
             },
         )
         try:

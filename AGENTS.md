@@ -21,6 +21,12 @@
 - MCDR Python 插件支持 Python `>=3.11,<3.14`。本机和远程均优先通过 `uv` 选择合适的稳定解释器；CI 当前以 Python 3.12 验证。部署 manifest 必须记录实际解释器版本，不能假定某个设备固定使用 3.11。
 - MCDR、Games_AI、Fabric Bridge 的 API Key、密码哈希、HMAC 密钥、代理和运行时配置只能放在远程私有配置或被忽略文件中，不能进入 artifact、Git 或公开文档。
 
+## MCSM 实例控制
+
+- 通过 MCSM 操作实例时，使用其受控终端数据流发送固定命令；不要绕过 MCSM 直接向 PTY、FIFO、标准输入文件描述符或游戏进程写入数据。
+- MCSM 网页面板的终端输入链路为“面板申请临时 stream channel -> Daemon Socket.IO `stream/auth` -> `stream/input` -> 实例 PTY”。实现自动化或诊断时应复用该链路，并只发送已验证的常量维护命令。
+- 实例 UUID、Daemon 地址与前缀、临时 stream passport、面板会话、端口、实际远程路径均为运行环境信息，只能写在被忽略的 `AGENTS.local.md` 或远程私有配置中，不能提交或写入公开文档。
+
 ## Import 约定
 
 - 所有 Python 与 Kotlin 源文件的 import 必须保持稳定、可读的顺序；提交前应检查本次涉及文件及对应源码目录中的全部此类文件。

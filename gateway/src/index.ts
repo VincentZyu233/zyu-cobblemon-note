@@ -53,13 +53,14 @@ function isLoopback(address: string | undefined): boolean {
 async function bridge(path: string, method = 'GET', body = ''): Promise<BridgeData> {
   const timestamp = Math.floor(Date.now() / 1_000).toString();
   const nonce = randomUUID();
+  const signaturePath = new URL(path, bridgeUrl).pathname;
   const response = await fetch(`${bridgeUrl}${path}`, {
     method,
     body: body || undefined,
     headers: {
       'content-type': 'application/json',
       'x-zcn-nonce': nonce,
-      'x-zcn-signature': signature(timestamp, nonce, method, path, body),
+      'x-zcn-signature': signature(timestamp, nonce, method, signaturePath, body),
       'x-zcn-timestamp': timestamp,
     },
   });
@@ -225,7 +226,7 @@ async function handleHttp(request: IncomingMessage, response: ServerResponse): P
   }
 }
 
-const mcp = new McpServer({ name: 'zyu-cobblemon-note', version: '0.2.0' });
+const mcp = new McpServer({ name: 'zyu-cobblemon-note', version: '0.2.1' });
 const tools: Array<[string, string, Record<string, z.ZodType>, (args: Record<string, string>) => Promise<unknown>]> = [
   ['get_server_status', '读取当前 TPS、MSPT 与在线人数。', {}, () => bridge('/v1/status')],
   ['list_online_players', '读取在线玩家的位置与基础状态。', {}, () => bridge('/v1/players')],

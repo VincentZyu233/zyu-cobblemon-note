@@ -2,16 +2,16 @@
 
 这是一套给当前 Cobblemon 朋友服准备的只读辅助能力：它让网页、游戏内命令和兼容 MCP 的 AI 在需要时读取真实进度，而不是根据截图猜测。它不会给物品、移动宝可梦、执行 OP 指令、加载区块或修改世界数据。
 
-::: tip 当前状态：`0.2.0` 已实现，待 CI Artifact 部署与开服实测
+::: tip 当前状态：`0.2.1` 已实现，待 CI Artifact 部署
 
-已部署的组件仍为 `0.1.1`；本次 `0.2.0` 会由 CI 生成 Fabric 数据桥、Node Gateway 与 MCDR Web 插件 Artifact，确认停服窗口后统一替换。Gateway 已由 systemd 接管且仅监听 `127.0.0.1:25932`，同时已无泄漏核对 Fabric `sharedSecret` 与 Gateway `BRIDGE_SECRET` 一致。服务端当前有人在线，不能直接替换；部署后需由实际玩家验证游戏内 `/ai question` 的正常回答、冷却提示与回传消息。
+远程当前运行 `0.2.0`：登录配置已修正，Gateway 已由 systemd 接管且仅监听 `127.0.0.1:25932`。本次 `0.2.1` 修复 Bridge HMAC 对带查询参数请求的路径规范化，避免 `/v1/player?name=...` 被 Fabric 误判为 `unauthorized`；CI Artifact 完成后再选择维护窗口替换。
 
 :::
 
 ## 当前进度
 
 - Fabric 数据桥与 Node 网关源码已在本仓库，CI 可构建 Fabric Jar、网关部署包和 MCDR Web 插件 Artifact。
-- 自研 MCDR NiceGUI 面板已完成源码和烟雾测试；`0.2.0` 修复中文用户名的 UTF-8 安全比较，并提高深色模式下输入框、表格与次级文字的明度层级。网页默认端口为 `26697`。
+- 自研 MCDR NiceGUI 面板已完成源码和烟雾测试；`0.2.0` 修复中文用户名的 UTF-8 安全比较，并提高深色模式下输入框、表格与次级文字的明度层级；`0.2.1` 修复带查询参数的 Bridge HMAC。网页默认端口为 `26697`。
 - Node 网关已支持游戏内 `/ai question`、网页登录后的 `/v1/web-questions` 与 MCP stdio，只监听 `127.0.0.1:25932`。
 - Cobblemon 服务端已移动至 `/data/data1/minecraft/mcdr-cobblemon/cobblemon`，由 MCDR 的 `working_directory` 管理。
 - `Games_AI` 的 fork 已整理：`main` 对齐上游，`tyy-superflat-test` 保留天翼云超平坦测试服工作。曾创建的 `zyu-cobblemon` 只读实验分支未部署，后续会删除，不进入最终架构。
@@ -77,7 +77,7 @@ MCDR Web 面板在公网 `26697/TCP` 提供只读进度视图：未登录用户�
 
 ::: warning 修改 MCDR 私有配置后要重载
 
-`config/zyu_cobblemon_web/config.json` 中的 `bridge_secret`、网页账号或会话密钥在插件启动时读取。修改后必须重载自研插件或重启 MCDR；否则内存仍使用旧值，网页会出现 Fabric Bridge `HTTP 401`。本次 `0.2.0` 只修复中文账号比较，不改变这个运行时配置规则。
+`config/zyu_cobblemon_web/config.json` 中的 `bridge_secret`、网页账号或会话密钥在插件启动时读取。修改后必须重载自研插件或重启 MCDR；否则内存仍使用旧值，网页会出现 Fabric Bridge `HTTP 401`。`0.2.0` 修复中文账号比较，`0.2.1` 修复查询参数的签名路径，两者都不改变这个运行时配置规则。
 
 :::
 
@@ -145,7 +145,7 @@ Node 网关通过 stdio 暴露 MCP，不监听公网 HTTP。兼容 MCP 的 Agent
 
 ### 通过 CI 后：远程部署
 
-1. 使用带 `[build-action]` 的提交生成 `0.2.0` Fabric Jar、Node 网关和 MCDR Web Artifact；只部署 Artifact，不复制源码到插件目录。
+1. 使用带 `[build-action]` 的提交生成 `0.2.1` Fabric Jar、Node 网关和 MCDR Web Artifact；只部署 Artifact，不复制源码到插件目录。
 2. 将 `/data/data1/minecraft/cobblemon` 移入 `/data/data1/minecraft/mcdr-cobblemon/cobblemon`。
 3. 在 MCDR 根目录用 Python 3.12 和 uv 初始化运行环境，配置：
 

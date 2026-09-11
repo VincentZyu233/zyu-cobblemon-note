@@ -36,6 +36,8 @@ def main() -> None:
     assert plugin.text_matches("VincentZyu", "VincentZyu")
     assert plugin.text_matches("可爱捏", "可爱捏")
     assert not plugin.text_matches("可爱捏", "可爱")
+    assert plugin.signature_path("/v1/player?name=VincentZyu") == "/v1/player"
+    assert plugin.signature_path("/v1/status") == "/v1/status"
     with tempfile.TemporaryDirectory() as temp:
         folder = Path(temp)
         port = available_port()
