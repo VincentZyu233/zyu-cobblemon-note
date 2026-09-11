@@ -33,7 +33,7 @@ const SOURCE_GROUNDING_INSTRUCTIONS = [
   '你是 Zyu 的 Minecraft Cobblemon 助手。用简洁中文回答。',
   '回答 Cobblemon、整合包、游戏机制、物品、宝可梦或方块行为前，必须优先依据请求中提供的“Cobblemon 源码检索结果”。',
   '若源码检索结果为空、无关或无法直接证明结论，必须明确说“无法从当前本机 Cobblemon 源码确认”，不得把通用 Minecraft、宝可梦知识或自己的推测表述为该服务器的事实。',
-  '实时服务器数据只用于描述当前服务器状态；源码片段只用于描述实现与机制。需要推断时，明确标注为推断并说明依据。',
+  '实时服务器数据和基地库存汇总只用于描述当前服务器状态与材料；源码片段只用于描述实现与机制。库存标记为不完整时，必须说明未加载登记箱子未被统计。需要推断时，明确标注为推断并说明依据。',
   '不得建议执行作弊、给物品、修改世界或绕过权限的操作。',
 ].join('\n');
 
@@ -81,11 +81,31 @@ function mcpText(data: unknown) {
   return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }], structuredContent: data as Record<string, unknown> };
 }
 
+const SOURCE_DIRECTORIES = [
+  'common/src/main/resources/data/cobblemon/recipe',
+  'common/src/main/resources/data/cobblemon/worldgen',
+  'common/src/main/resources/data/cobblemon/loot_table',
+  'common/src/main/resources/assets/cobblemon/lang',
+  'common/src/main/kotlin',
+  'docs',
+];
+
+const SOURCE_ALIASES: Record<string, string[]> = {
+  '治疗机': ['healing_machine', 'max_revive', 'revive', 'vivichoke', 'revival_herb', 'heal_powder'],
+  '治疗仪': ['healing_machine', 'max_revive', 'revive', 'vivichoke', 'revival_herb', 'heal_powder'],
+  '完全复活药': ['max_revive', 'revive', 'vivichoke'],
+  '复活药': ['revive', 'max_revive', 'revival_herb', 'heal_powder'],
+  '复活草': ['revival_herb', 'heal_powder', 'revive', 'max_revive'],
+  '活力蕾': ['vivichoke', 'vivichoke_seeds', 'max_revive'],
+  '活力蕾种子': ['vivichoke_seeds', 'vivichoke'],
+  '万能粉': ['heal_powder', 'revival_herb'],
+};
+
 async function sourceFiles(directory: string, files: string[], depth = 0): Promise<void> {
-  if (files.length >= 120 || depth > 6) return;
+  if (files.length >= 2_000 || depth > 8) return;
   const entries = await readdir(directory, { withFileTypes: true });
   for (const entry of entries) {
-    if (files.length >= 120 || ['.git', '.gradle', 'build', 'run'].includes(entry.name)) continue;
+    if (files.length >= 2_000 || ['.git', '.gradle', 'build', 'run'].includes(entry.name)) continue;
     const path = join(directory, entry.name);
     if (entry.isDirectory()) await sourceFiles(path, files, depth + 1);
     else if (entry.isFile() && ['.json', '.kt', '.md'].includes(extname(entry.name))) files.push(path);
@@ -93,13 +113,24 @@ async function sourceFiles(directory: string, files: string[], depth = 0): Promi
 }
 
 function keywords(question: string): string[] {
-  return question.toLowerCase().split(/[^a-z0-9_\u4e00-\u9fff]+/u).filter(word => word.length >= 2).slice(0, 12);
+  const terms = question.toLowerCase().split(/[^a-z0-9_\u4e00-\u9fff]+/u).filter(word => word.length >= 2).slice(0, 12);
+  for (const [name, aliases] of Object.entries(SOURCE_ALIASES)) {
+    if (question.includes(name)) terms.push(...aliases);
+  }
+  return [...new Set(terms)];
 }
 
 async function sourceContext(question: string): Promise<string> {
   try {
     const files: string[] = [];
-    await sourceFiles(sourceRoot, files);
+    for (const directory of SOURCE_DIRECTORIES) {
+      const path = join(sourceRoot, directory);
+      try {
+        await sourceFiles(path, files);
+      } catch {
+        // Source branches may omit optional documentation directories.
+      }
+    }
     const terms = keywords(question);
     const snippets: string[] = [];
     let total = 0;
@@ -121,10 +152,52 @@ async function sourceContext(question: string): Promise<string> {
   }
 }
 
+function records(value: unknown): BridgeData[] {
+  return Array.isArray(value) ? value.filter((item): item is BridgeData => !!item && typeof item === 'object' && !Array.isArray(item)) : [];
+}
+
+async function baseInventory(): Promise<BridgeData> {
+  const bases = records((await bridge('/v1/bases')).bases);
+  const totals = new Map<string, number>();
+  let loadedContainers = 0;
+  let unloadedContainers = 0;
+
+  for (const base of bases) {
+    const name = typeof base.name === 'string' ? base.name : '';
+    if (!name) continue;
+    const containers = records((await bridge(`/v1/base?name=${encodeURIComponent(name)}`)).containers);
+    for (const container of containers) {
+      if (container.state !== 'loaded') {
+        unloadedContainers++;
+        continue;
+      }
+      loadedContainers++;
+      for (const item of records(container.items)) {
+        const itemId = typeof item.item === 'string' ? item.item : '';
+        const count = typeof item.count === 'number' ? item.count : 0;
+        if (itemId && count > 0) totals.set(itemId, (totals.get(itemId) ?? 0) + count);
+      }
+    }
+  }
+
+  const items = [...totals.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .slice(0, 250)
+    .map(([item, count]) => ({ item, count }));
+  return {
+    bases: bases.map(base => base.name),
+    loadedContainers,
+    unloadedContainers,
+    items,
+    itemsTruncated: totals.size > items.length,
+  };
+}
+
 async function answer(question: string, player: string): Promise<string> {
-  const [status, progress, sources] = await Promise.all([
+  const [status, progress, inventory, sources] = await Promise.all([
     bridge('/v1/status'),
     bridge(`/v1/player?name=${encodeURIComponent(player)}`),
+    baseInventory(),
     sourceContext(question),
   ]);
   const response = await fetch(`${baseUrl}/responses`, {
@@ -137,6 +210,7 @@ async function answer(question: string, player: string): Promise<string> {
       input: [
         `当前服务器：${JSON.stringify(status)}`,
         `提问玩家状态：${JSON.stringify(progress)}`,
+        `已加载登记箱子汇总：${JSON.stringify(inventory)}`,
         sources ? `有限 Cobblemon 源码检索结果：\n${sources}` : '本次没有匹配的源码片段。',
         `问题：${question}`,
       ].join('\n\n'),
