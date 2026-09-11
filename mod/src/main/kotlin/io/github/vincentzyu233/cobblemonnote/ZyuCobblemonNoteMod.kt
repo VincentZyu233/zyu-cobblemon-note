@@ -124,7 +124,15 @@ class ZyuCobblemonNoteMod : ModInitializer {
                     traveler.teleportTo(destination.serverLevel(), destination.x, destination.y, destination.z, destination.yRot, destination.xRot)
                     context.source.sendSuccess({ Component.literal("已传送至 ${destination.gameProfile.name}") }, false)
                     1
-                })
+                }.then(Commands.argument("location", Vec3Argument.vec3()).executes { context ->
+                    val traveler = context.source.playerOrException
+                    val target = EntityArgument.getPlayer(context, "player")
+                    require(target.uuid == traveler.uuid) { "此写法只能传送自己；请使用 /goto <玩家名> 前往在线玩家" }
+                    val destination = Vec3Argument.getVec3(context, "location")
+                    traveler.teleportTo(traveler.serverLevel(), destination.x, destination.y, destination.z, traveler.yRot, traveler.xRot)
+                    context.source.sendSuccess({ Component.literal("已传送至 %.1f, %.1f, %.1f".format(destination.x, destination.y, destination.z)) }, false)
+                    1
+                }))
                 .then(Commands.argument("location", Vec3Argument.vec3()).executes { context ->
                     val traveler = context.source.playerOrException
                     val destination = Vec3Argument.getVec3(context, "location")
