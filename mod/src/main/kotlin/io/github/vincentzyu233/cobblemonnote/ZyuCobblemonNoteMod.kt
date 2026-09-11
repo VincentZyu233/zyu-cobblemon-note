@@ -14,6 +14,8 @@ import net.fabricmc.fabric.api.event.player.UseBlockCallback
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands
+import net.minecraft.commands.arguments.EntityArgument
+import net.minecraft.commands.arguments.coordinates.Vec3Argument
 import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
@@ -113,17 +115,24 @@ class ZyuCobblemonNoteMod : ModInitializer {
                     .then(Commands.literal("add").executes { context -> baseAction(context.source) { baseSelections.add(it) } })
                     .then(Commands.literal("clear").executes { context -> baseAction(context.source) { baseSelections.clear(it) } }))
         )
-        val teleport = dispatcher.root.getChild("teleport") ?: dispatcher.root.getChild("tp")
-        if (teleport == null) {
-            LOGGER.warn("Vanilla teleport command was not registered; /goto is unavailable")
-        } else {
-            dispatcher.register(
-                Commands.literal("goto")
-                    .requires(::canGoto)
-                    // Keep vanilla /teleport parsing and behavior, while granting level 2 only to this command execution.
-                    .redirect(teleport) { context -> context.source.withPermission(2) }
-            )
-        }
+        dispatcher.register(
+            Commands.literal("goto")
+                .requires(::canGoto)
+                .then(Commands.argument("player", EntityArgument.player()).executes { context ->
+                    val traveler = context.source.playerOrException
+                    val destination = EntityArgument.getPlayer(context, "player")
+                    traveler.teleportTo(destination.serverLevel(), destination.x, destination.y, destination.z, destination.yRot, destination.xRot)
+                    context.source.sendSuccess({ Component.literal("已传送至 ${destination.gameProfile.name}") }, false)
+                    1
+                })
+                .then(Commands.argument("location", Vec3Argument.vec3()).executes { context ->
+                    val traveler = context.source.playerOrException
+                    val destination = Vec3Argument.getVec3(context, "location")
+                    traveler.teleportTo(traveler.serverLevel(), destination.x, destination.y, destination.z, traveler.yRot, traveler.xRot)
+                    context.source.sendSuccess({ Component.literal("已传送至 %.1f, %.1f, %.1f".format(destination.x, destination.y, destination.z)) }, false)
+                    1
+                })
+        )
         dispatcher.register(
             Commands.literal("suicide")
                 .requires { config.suicideEnabled && it.entity is ServerPlayer }
